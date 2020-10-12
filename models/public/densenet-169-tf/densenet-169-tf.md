@@ -3,7 +3,7 @@
 ## Use Case and High-Level Description
 
 This is a TensorFlow\* version of `densenet-169` model, one of the DenseNet
-group of models designed to perform image classification. The weights were converted from DenseNet-Keras Models. For details, see [repository](https://github.com/pudae/tensorflow-densenet/) and [paper](https://arxiv.org/pdf/1608.06993.pdf).
+group of models designed to perform image classification. The weights were converted from DenseNet-Keras Models. For details, see [repository](https://github.com/pudae/tensorflow-densenet/) and [paper](https://arxiv.org/abs/1608.06993).
 
 ## Example
 
@@ -15,6 +15,13 @@ group of models designed to perform image classification. The weights were conve
 | GFlops                          | 6.16                                      |
 | MParams                         | 14.139                                    |
 | Source framework                | TensorFlow\*                              |
+
+## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| Top 1  | 75.76% |
+| Top 5  | 92.81%|
 
 ## Performance
 
@@ -36,14 +43,14 @@ Name: `Placeholder` , shape: [1x224x224x3]. An input image is the [BxHxWxC] form
 ### Converted Model
 
 Name: `Placeholder`, shape: [1x3x224x224]. An input image is in the [BxCxHxW] format,
-   where:
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+   - B - batch size
+   - C - number of channels
+   - H - image height
+   - W - image width
 
-   Expected color order: BGR.
+Expected color order: BGR.
 
 ## Output
 

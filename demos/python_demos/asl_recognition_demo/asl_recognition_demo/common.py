@@ -14,7 +14,7 @@
  limitations under the License.
 """
 
-from openvino.inference_engine import IENetwork, IECore  # pylint: disable=no-name-in-module
+from openvino.inference_engine import IECore  # pylint: disable=no-name-in-module
 
 
 def load_ie_core(device, cpu_extension=None):
@@ -34,27 +34,19 @@ class IEModel:  # pylint: disable=too-few-public-methods
         """Constructor"""
         if model_path.endswith((".xml", ".bin")):
             model_path = model_path[:-4]
-        model_xml = model_path + ".xml"
-        model_bin = model_path + ".bin"
-        self.net = IENetwork(model=model_xml, weights=model_bin)
-        assert len(self.net.inputs.keys()) == 1, "One input is expected"
-
-        supported_layers = ie_core.query_network(self.net, device)
-        not_supported_layers = [l for l in self.net.layers.keys() if l not in supported_layers]
-        if len(not_supported_layers) > 0:
-            raise RuntimeError("Following layers are not supported by the {} plugin:\n {}"
-                               .format(device, ', '.join(not_supported_layers)))
+        self.net = ie_core.read_network(model_path + ".xml", model_path + ".bin")
+        assert len(self.net.input_info) == 1, "One input is expected"
 
         self.exec_net = ie_core.load_network(network=self.net,
                                              device_name=device,
                                              num_requests=num_requests)
 
-        self.input_name = next(iter(self.net.inputs))
+        self.input_name = next(iter(self.net.input_info))
         if len(self.net.outputs) > 1:
             if output_shape is not None:
                 candidates = []
                 for candidate_name in self.net.outputs:
-                    candidate_shape = self.exec_net.requests[0].outputs[candidate_name].shape
+                    candidate_shape = self.exec_net.requests[0].output_blobs[candidate_name].buffer.shape
                     if len(candidate_shape) != len(output_shape):
                         continue
 
@@ -72,8 +64,8 @@ class IEModel:  # pylint: disable=too-few-public-methods
         else:
             self.output_name = next(iter(self.net.outputs))
 
-        self.input_size = self.net.inputs[self.input_name].shape
-        self.output_size = self.exec_net.requests[0].outputs[self.output_name].shape
+        self.input_size = self.net.input_info[self.input_name].input_data.shape
+        self.output_size = self.exec_net.requests[0].output_blobs[self.output_name].buffer.shape
         self.num_requests = num_requests
 
     def infer(self, data):
@@ -93,6 +85,6 @@ class IEModel:  # pylint: disable=too-few-public-methods
         """Waits for the model output by the specified request ID"""
 
         if self.exec_net.requests[req_id].wait(-1) == 0:
-            return self.exec_net.requests[req_id].outputs[self.output_name]
+            return self.exec_net.requests[req_id].output_blobs[self.output_name].buffer
         else:
             return None

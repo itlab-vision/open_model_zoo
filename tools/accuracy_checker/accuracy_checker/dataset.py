@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,21 @@ from pathlib import Path
 import warnings
 
 from .annotation_converters import BaseFormatConverter, save_annotation, make_subset, analyze_dataset
-from .config import ConfigValidator, StringField, PathField, ListField, DictField, BaseField, NumberField, ConfigError
+from .config import (
+    ConfigValidator,
+    StringField,
+    PathField,
+    ListField,
+    DictField,
+    BaseField,
+    NumberField,
+    ConfigError,
+    BoolField
+)
 from .utils import JSONDecoderWithAutoConversion, read_json, get_path, contains_all, set_image_metadata, OrderedSet
 from .representation import BaseRepresentation, ReIdentificationClassificationAnnotation, ReIdentificationAnnotation
 from .data_readers import DataReaderField, REQUIRES_ANNOTATIONS
+from .logging import print_info
 
 
 class DatasetConfig(ConfigValidator):
@@ -39,51 +50,48 @@ class DatasetConfig(ConfigValidator):
     reader = DataReaderField(optional=True)
     annotation_conversion = DictField(optional=True)
     subsample_size = BaseField(optional=True)
+    shuffle = BoolField(optional=True)
     subsample_seed = NumberField(value_type=int, min_value=0, optional=True)
     analyze_dataset = BaseField(optional=True)
     segmentation_masks_source = PathField(is_directory=True, optional=True)
+    additional_data_source = PathField(is_directory=True, optional=True)
+    batch = NumberField(value_type=int, min_value=1, optional=True)
+    _profile = BoolField(optional=True, default=False)
+    _report_type = StringField(optional=True, choices=['json', 'csv'])
+    _ie_preprocessing = BoolField(optional=True, default=False)
 
 
 class Dataset:
-    def __init__(self, config_entry):
+    def __init__(self, config_entry, delayed_annotation_loading=False):
         self._config = config_entry
-        self.batch = 1
+        self.batch = self.config.get('batch')
         self.iteration = 0
         dataset_config = DatasetConfig('Dataset')
         dataset_config.validate(self._config)
-        self._images_dir = Path(self._config.get('data_source', ''))
-        self._load_annotation()
+        if not delayed_annotation_loading:
+            self._load_annotation()
 
     def _load_annotation(self):
-        def create_subset(subsample_size, subsample_seed):
-            if isinstance(subsample_size, str):
-                if subsample_size.endswith('%'):
-                    try:
-                        subsample_size = float(subsample_size[:-1])
-                    except ValueError:
-                        raise ConfigError('invalid value for subsample_size: {}'.format(subsample_size))
-                    if subsample_size <= 0:
-                        raise ConfigError('subsample_size should be > 0')
-                    subsample_size *= len(annotation) / 100
-                    subsample_size = int(subsample_size) or 1
-            try:
-                subsample_size = int(subsample_size)
-            except ValueError:
-                raise ConfigError('invalid value for subsample_size: {}'.format(subsample_size))
-            if subsample_size < 1:
-                raise ConfigError('subsample_size should be > 0')
-            return make_subset(annotation, subsample_size, subsample_seed)
-
         annotation, meta = None, None
         use_converted_annotation = True
         if 'annotation' in self._config:
             annotation_file = Path(self._config['annotation'])
             if annotation_file.exists():
+                print_info('Annotation for {dataset_name} dataset will be loaded from {file}'.format(
+                    dataset_name=self._config['name'], file=annotation_file))
                 annotation = read_annotation(get_path(annotation_file))
                 meta = self._load_meta()
                 use_converted_annotation = False
         if not annotation and 'annotation_conversion' in self._config:
+            print_info("Annotation conversion for {dataset_name} dataset has been started".format(
+                dataset_name=self._config['name']))
+            print_info("Parameters to be used for conversion:")
+            for key, value in self._config['annotation_conversion'].items():
+                print_info('{key}: {value}'.format(key=key, value=value))
             annotation, meta = self._convert_annotation()
+            if annotation:
+                print_info("Annotation conversion for {dataset_name} dataset has been finished".format(
+                    dataset_name=self._config['name']))
 
         if not annotation:
             raise ConfigError('path to converted annotation or data for conversion should be specified')
@@ -91,17 +99,26 @@ class Dataset:
         subsample_size = self._config.get('subsample_size')
         if subsample_size is not None:
             subsample_seed = self._config.get('subsample_seed', 666)
+            shuffle = self._config.get('shuffle', True)
 
-            annotation = create_subset(subsample_size, subsample_seed)
+            annotation = create_subset(annotation, subsample_size, subsample_seed, shuffle)
 
         if self._config.get('analyze_dataset', False):
-            analyze_dataset(annotation, meta)
+            if self._config.get('segmentation_masks_source'):
+                meta['segmentation_masks_source'] = self._config.get('segmentation_masks_source')
+            meta = analyze_dataset(annotation, meta)
+            if meta.get('segmentation_masks_source'):
+                del meta['segmentation_masks_source']
 
         if use_converted_annotation and contains_all(self._config, ['annotation', 'annotation_conversion']):
             annotation_name = self._config['annotation']
             meta_name = self._config.get('dataset_meta')
             if meta_name:
                 meta_name = Path(meta_name)
+                print_info("{dataset_name} dataset metadata will be saved to {file}".format(
+                    dataset_name=self._config['name'], file=meta_name))
+            print_info('Converted annotation for {dataset_name} dataset will be saved to {file}'.format(
+                dataset_name=self._config['name'], file=Path(annotation_name)))
             save_annotation(annotation, meta, Path(annotation_name), meta_name)
 
         self._annotation = annotation
@@ -116,6 +133,10 @@ class Dataset:
     @property
     def config(self):
         return deepcopy(self._config) #read-only
+
+    @property
+    def identifiers(self):
+        return [ann.identifier for ann in self.annotation]
 
     def __len__(self):
         if self.subset:
@@ -146,6 +167,8 @@ class Dataset:
         context.input_ids_batch = batch_input_ids
 
     def __getitem__(self, item):
+        if self.batch is None:
+            self.batch = 1
         if self.size <= item * self.batch:
             raise IndexError
 
@@ -212,11 +235,18 @@ class Dataset:
         set_image_metadata(annotation, image)
         annotation.set_data_source(data_source)
         segmentation_mask_source = self.config.get('segmentation_masks_source')
-        annotation.metadata['segmentation_masks_source'] = segmentation_mask_source
+        annotation.set_segmentation_mask_source(segmentation_mask_source)
+        annotation.set_additional_data_source(self.config.get('additional_data_source'))
+        annotation.set_dataset_metadata(self.metadata)
 
     def _load_meta(self):
+        meta = None
         meta_data_file = self._config.get('dataset_meta')
-        return read_json(meta_data_file, cls=JSONDecoderWithAutoConversion) if meta_data_file else None
+        if meta_data_file:
+            print_info('{dataset_name} dataset metadata will be loaded from {file}'.format(
+                dataset_name=self._config['name'], file=meta_data_file))
+            meta = read_json(meta_data_file, cls=JSONDecoderWithAutoConversion)
+        return meta
 
     def _convert_annotation(self):
         conversion_params = self._config.get('annotation_conversion')
@@ -236,6 +266,30 @@ class Dataset:
         if reload_annotation:
             self._load_annotation()
 
+    def set_annotation(self, annotation):
+        subsample_size = self._config.get('subsample_size')
+        if subsample_size is not None:
+            subsample_seed = self._config.get('subsample_seed', 666)
+
+            annotation = create_subset(annotation, subsample_size, subsample_seed)
+
+        if self._config.get('analyze_dataset', False):
+            if self._config.get('segmentation_masks_source'):
+                self.metadata['segmentation_masks_source'] = self._config.get('segmentation_masks_source')
+            self.metadata = analyze_dataset(annotation, self.metadata)
+            if self.metadata.get('segmentation_masks_source'):
+                del self.metadata['segmentation_masks_source']
+
+        self._annotation = annotation
+        self.name = self._config.get('name')
+        self.subset = None
+
+    def provide_data_info(self, reader, annotations):
+        for ann in annotations:
+            input_data = reader(ann.identifier)
+            self.set_annotation_metadata(ann, input_data, reader.data_source)
+        return annotations
+
 
 def read_annotation(annotation_file: Path):
     annotation_file = get_path(annotation_file)
@@ -251,17 +305,40 @@ def read_annotation(annotation_file: Path):
     return result
 
 
+def create_subset(annotation, subsample_size, subsample_seed, shuffle=True):
+    if isinstance(subsample_size, str):
+        if subsample_size.endswith('%'):
+            try:
+                subsample_size = float(subsample_size[:-1])
+            except ValueError:
+                raise ConfigError('invalid value for subsample_size: {}'.format(subsample_size))
+            if subsample_size <= 0:
+                raise ConfigError('subsample_size should be > 0')
+            subsample_size *= len(annotation) / 100
+            subsample_size = int(subsample_size) or 1
+    try:
+        subsample_size = int(subsample_size)
+    except ValueError:
+        raise ConfigError('invalid value for subsample_size: {}'.format(subsample_size))
+    if subsample_size < 1:
+        raise ConfigError('subsample_size should be > 0')
+    return make_subset(annotation, subsample_size, subsample_seed, shuffle)
+
+
 class DatasetWrapper:
-    def __init__(self, data_reader, annotation_reader=None, tag=''):
+    def __init__(self, data_reader, annotation_reader=None, tag='', dataset_config=None):
         self.tag = tag
         self.data_reader = data_reader
         self.annotation_reader = annotation_reader
-        self._batch = 1
+        self._batch = 1 if not annotation_reader else annotation_reader.batch
         self.subset = None
+        self.dataset_config = dataset_config or {}
         if not annotation_reader:
             self._identifiers = [file.name for file in self.data_reader.data_source.glob('*')]
 
     def __getitem__(self, item):
+        if self.batch is None:
+            self.batch = 1
         if self.size <= item * self.batch:
             raise IndexError
         batch_annotation = []
@@ -271,9 +348,10 @@ class DatasetWrapper:
             batch_input = [self.data_reader(identifier=identifier) for identifier in batch_identifiers]
             for annotation, input_data in zip(batch_annotation, batch_input):
                 set_image_metadata(annotation, input_data)
-                annotation.metadata['data_source'] = self.data_reader.data_source
+                annotation.set_data_source(self.data_reader.data_source)
                 segmentation_mask_source = self.annotation_reader.config.get('segmentation_masks_source')
-                annotation.metadata['segmentation_masks_source'] = segmentation_mask_source
+                annotation.set_segmentation_mask_source(segmentation_mask_source)
+                annotation.set_additional_data_source(self.annotation_reader.config.get('additional_data_source'))
             return batch_annotation_ids, batch_annotation, batch_input, batch_identifiers
         batch_start = item * self.batch
         batch_end = min(self.size, batch_start + self.batch)
@@ -328,3 +406,7 @@ class DatasetWrapper:
     @property
     def size(self):
         return self.__len__()
+
+    @property
+    def multi_infer(self):
+        return getattr(self.data_reader, 'multi_infer', False)

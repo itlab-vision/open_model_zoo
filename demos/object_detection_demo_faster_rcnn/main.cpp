@@ -24,8 +24,6 @@
 
 using namespace InferenceEngine;
 
-ConsoleErrorListener error_listener;
-
 bool ParseAndCheckCommandLine(int argc, char *argv[]) {
     // ---------------------------Parsing and validation of input args--------------------------------------
 
@@ -57,7 +55,7 @@ bool ParseAndCheckCommandLine(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     try {
         /** This demo covers certain topology and cannot be generalized for any object detection one **/
-        slog::info << "InferenceEngine: " << GetInferenceEngineVersion() << "\n";
+        slog::info << "InferenceEngine: " << *GetInferenceEngineVersion() << "\n";
 
         // ------------------------------ Parsing and validation of input args ---------------------------------
         if (!ParseAndCheckCommandLine(argc, argv)) {
@@ -73,10 +71,6 @@ int main(int argc, char *argv[]) {
         // --------------------------- 1. Load inference engine -------------------------------------
         slog::info << "Loading Inference Engine" << slog::endl;
         Core ie;
-
-        if (FLAGS_p_msg) {
-            ie.SetLogCallback(error_listener);
-        }
 
         if (!FLAGS_l.empty()) {
             // CPU(MKLDNN) extensions are loaded as a shared library and passed as a pointer to base extension
@@ -224,7 +218,8 @@ int main(int argc, char *argv[]) {
             auto imInfoDim = inputsInfo.find(imInfoInputName)->second->getTensorDesc().getDims()[1];
 
             /** Fill input tensor with values **/
-            float *p = input2->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>();
+            LockedMemory<void> input2Mapped = as<MemoryBlob>(input2)->wmap();
+            float *p = input2Mapped.as<float*>();
 
             for (size_t image_id = 0; image_id < std::min(images.size(), batchSize); ++image_id) {
                 p[image_id * imInfoDim + 0] = static_cast<float>(inputsInfo[imageInputName]->getTensorDesc().getDims()[2]);
@@ -256,7 +251,8 @@ int main(int argc, char *argv[]) {
 
         detOutPostProcessor.execute(detOutInBlobs, detOutOutBlobs, nullptr);
 
-        const float* detection = static_cast<PrecisionTrait<Precision::FP32>::value_type*>(output_blob->buffer());
+        LockedMemory<const void> outputBlobMapped = as<MemoryBlob>(output_blob)->rmap();
+        const float* detection  = outputBlobMapped.as<float *>();
 
         /* Each detection has image_id that denotes processed image */
         for (size_t curProposal = 0; curProposal < maxProposalCount; curProposal++) {

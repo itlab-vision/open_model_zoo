@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,13 +37,6 @@ class Adapter(ClassProvider):
         self.validate_config()
         self.configure()
 
-    def __call__(self, context=None, outputs=None, **kwargs):
-        if outputs is not None:
-            return self.process(outputs, **kwargs)
-        predictions = self.process(context.prediction_batch, context.identifiers_batch, **kwargs)
-        context.prediction_batch = predictions
-        return context
-
     def get_value_from_config(self, key):
         return get_parameter_value_from_config(self.launcher_config, self.parameters(), key)
 
@@ -55,7 +48,7 @@ class Adapter(ClassProvider):
             ),
         }
 
-    def process(self, raw, identifiers=None, frame_meta=None):
+    def process(self, raw, identifiers, frame_meta):
         raise NotImplementedError
 
     def configure(self):
@@ -100,11 +93,8 @@ def create_adapter(adapter_config, launcher=None, dataset=None):
         metadata = dataset.metadata
         if metadata:
             label_map = dataset.metadata.get('label_map')
-    launcher_config = launcher.config if launcher else None
     if isinstance(adapter_config, str):
-        if not launcher_config:
-            launcher_config = {'type': adapter_config}
-        adapter = Adapter.provide(adapter_config, launcher_config, label_map=label_map)
+        adapter = Adapter.provide(adapter_config, {'type': adapter_config}, label_map=label_map)
     elif isinstance(adapter_config, dict):
         adapter = Adapter.provide(adapter_config['type'], adapter_config, label_map=label_map)
     else:
@@ -112,5 +102,4 @@ def create_adapter(adapter_config, launcher=None, dataset=None):
 
     if launcher:
         adapter.output_blob = launcher.output_blob
-
     return adapter

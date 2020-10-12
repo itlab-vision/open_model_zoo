@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-The `octave-resnet-26-0.25` model is a modification of [`resnet-26`](https://arxiv.org/pdf/1512.03385.pdf) with Octave convolutions from [Drop an Octave: Reducing Spatial Redundancy in Convolutional Neural Networks with Octave Convolution](https://arxiv.org/abs/1904.05049) with `alpha=0.25`. Like the original model, this model is designed for image classification. For details about family of Octave Convolution models, check out the [repository](https://github.com/facebookresearch/OctConv).
+The `octave-resnet-26-0.25` model is a modification of [`resnet-26`](https://arxiv.org/abs/1512.03385) with Octave convolutions from [Drop an Octave: Reducing Spatial Redundancy in Convolutional Neural Networks with Octave Convolution](https://arxiv.org/abs/1904.05049) with `alpha=0.25`. Like the original model, this model is designed for image classification. For details about family of Octave Convolution models, check out the [repository](https://github.com/facebookresearch/OctConv).
 
 
 ## Example
@@ -17,6 +17,11 @@ The `octave-resnet-26-0.25` model is a modification of [`resnet-26`](https://arx
 | Source framework  | MXNet\*       |
 
 ## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| Top 1  | 76.076%|
+| Top 5  | 92.584%|
 
 ## Performance
 
@@ -33,7 +38,7 @@ Image, name: `data`,  shape: `1,3,224,224`, format: `B,C,H,W`, where:
 - `H` - height
 - `W` - width
 
-Channel order is `RGB`. 
+Channel order is `RGB`.
 Mean values: [124,117,104], scale value: 59.880239521.
 
 ### Converted Model

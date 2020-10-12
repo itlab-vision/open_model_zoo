@@ -21,19 +21,19 @@ The pose may contain up to 18 keypoints: ears, eyes, nose, neck, shoulders, elbo
 
 Average Precision metric described in [COCO Keypoint Evaluation site](http://cocodataset.org/#keypoints-eval).
 
-Tested on a COCO validation subset from the original paper [Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields](https://arxiv.org/pdf/1611.08050.pdf).
+Tested on a COCO validation subset from the original paper [Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields](https://arxiv.org/abs/1611.08050).
 
 ## Performance
 
 ## Inputs
 
-1. Name: `input` , shape: [1x3x256x456]. An input image in the [BxCxHxW] format ,
-  where:
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width.
-  Expected color order is BGR.
+Name: `input`, shape: [1x3x256x456]. An input image in the [BxCxHxW] format ,
+where:
+  - B - batch size
+  - C - number of channels
+  - H - image height
+  - W - image width
+Expected color order is BGR.
 
 ## Outputs
 

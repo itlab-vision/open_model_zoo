@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
  Copyright (c) 2019 Intel Corporation
 
@@ -15,8 +15,6 @@
  limitations under the License.
 """
 
-from __future__ import print_function
-
 import logging as log
 import os
 import sys
@@ -25,10 +23,14 @@ from argparse import ArgumentParser, SUPPRESS
 
 import cv2
 import numpy as np
-from openvino.inference_engine import IENetwork, IECore
+from openvino.inference_engine import IECore
 
 from text_spotting_demo.tracker import StaticIOUTracker
 from text_spotting_demo.visualizer import Visualizer
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'common'))
+import monitors
+
 
 SOS_INDEX = 0
 EOS_INDEX = 1
@@ -77,12 +79,13 @@ def build_argparser():
                       required=True, type=str, metavar='"<path>"')
     args.add_argument('-i',
                       dest='input_source',
-                      help='Required. Path to an image, video file or a numeric camera ID.',
+                      help='Required. Input to process.',
                       required=True, type=str, metavar='"<path>"')
     args.add_argument('-d', '--device',
-                      help='Optional. Specify the target device to infer on: CPU, GPU, FPGA, HDDL or MYRIAD. '
+                      help='Optional. Specify the target device to infer on, i.e : CPU, GPU. '
                            'The demo will look for a suitable plugin for device specified '
-                           '(by default, it is CPU).',
+                           '(by default, it is CPU). Please refer to OpenVINO documentation '
+                           'for the list of devices supported by the model.',
                       default='CPU', type=str, metavar='"<device>"')
     args.add_argument('-l', '--cpu_extension',
                       help='Required for CPU custom layers. '
@@ -133,6 +136,8 @@ def build_argparser():
     args.add_argument("--no_show",
                       help="Optional. Don't show output",
                       action='store_true')
+    args.add_argument('-u', '--utilization_monitors', default='', type=str,
+                      help='Optional. List of monitors to show initially.')
     return parser
 
 
@@ -172,48 +177,29 @@ def main():
     log.basicConfig(format='[ %(levelname)s ] %(message)s', level=log.INFO, stream=sys.stdout)
     args = build_argparser().parse_args()
 
-    mask_rcnn_model_xml = args.mask_rcnn_model
-    mask_rcnn_model_bin = os.path.splitext(mask_rcnn_model_xml)[0] + '.bin'
-
-    text_enc_model_xml = args.text_enc_model
-    text_enc_model_bin = os.path.splitext(text_enc_model_xml)[0] + '.bin'
-
-    text_dec_model_xml = args.text_dec_model
-    text_dec_model_bin = os.path.splitext(text_dec_model_xml)[0] + '.bin'
-
     # Plugin initialization for specified device and load extensions library if specified.
     log.info('Creating Inference Engine...')
     ie = IECore()
     if args.cpu_extension and 'CPU' in args.device:
         ie.add_extension(args.cpu_extension, 'CPU')
     # Read IR
-    log.info('Loading network files:\n\t{}\n\t{}'.format(mask_rcnn_model_xml, mask_rcnn_model_bin))
-    mask_rcnn_net = IENetwork(model=mask_rcnn_model_xml, weights=mask_rcnn_model_bin)
+    log.info('Loading Mask-RCNN network')
+    mask_rcnn_net = ie.read_network(args.mask_rcnn_model, os.path.splitext(args.mask_rcnn_model)[0] + '.bin')
 
-    log.info('Loading network files:\n\t{}\n\t{}'.format(text_enc_model_xml, text_enc_model_bin))
-    text_enc_net = IENetwork(model=text_enc_model_xml, weights=text_enc_model_bin)
+    log.info('Loading encoder part of text recognition network')
+    text_enc_net = ie.read_network(args.text_enc_model, os.path.splitext(args.text_enc_model)[0] + '.bin')
 
-    log.info('Loading network files:\n\t{}\n\t{}'.format(text_dec_model_xml, text_dec_model_bin))
-    text_dec_net = IENetwork(model=text_dec_model_xml, weights=text_dec_model_bin)
-
-    if 'CPU' in args.device:
-        supported_layers = ie.query_network(mask_rcnn_net, 'CPU')
-        not_supported_layers = [l for l in mask_rcnn_net.layers.keys() if l not in supported_layers]
-        if len(not_supported_layers) != 0:
-            log.error('Following layers are not supported by the plugin for specified device {}:\n {}'.
-                      format(args.device, ', '.join(not_supported_layers)))
-            log.error("Please try to specify cpu extensions library path in sample's command line parameters using -l "
-                      "or --cpu_extension command line argument")
-            sys.exit(1)
+    log.info('Loading decoder part of text recognition network')
+    text_dec_net = ie.read_network(args.text_dec_model, os.path.splitext(args.text_dec_model)[0] + '.bin')
 
     required_input_keys = {'im_data', 'im_info'}
-    assert required_input_keys == set(mask_rcnn_net.inputs.keys()), \
+    assert required_input_keys == set(mask_rcnn_net.input_info), \
         'Demo supports only topologies with the following input keys: {}'.format(', '.join(required_input_keys))
     required_output_keys = {'boxes', 'scores', 'classes', 'raw_masks', 'text_features'}
     assert required_output_keys.issubset(mask_rcnn_net.outputs.keys()), \
         'Demo supports only topologies with the following output keys: {}'.format(', '.join(required_output_keys))
 
-    n, c, h, w = mask_rcnn_net.inputs['im_data'].shape
+    n, c, h, w = mask_rcnn_net.input_info['im_data'].input_data.shape
     assert n == 1, 'Only batch 1 is supported by the demo application'
 
     log.info('Loading IR to the plugin...')
@@ -221,26 +207,29 @@ def main():
     text_enc_exec_net = ie.load_network(network=text_enc_net, device_name=args.device)
     text_dec_exec_net = ie.load_network(network=text_dec_net, device_name=args.device)
 
-    hidden_shape = text_dec_net.inputs[args.trd_input_prev_hidden].shape
+    hidden_shape = text_dec_net.input_info[args.trd_input_prev_hidden].input_data.shape
 
     del mask_rcnn_net
     del text_enc_net
     del text_dec_net
 
-    try:
-        input_source = int(args.input_source)
-    except ValueError:
-        input_source = args.input_source
-
+    input_source = args.input_source
     if os.path.isdir(input_source):
         cap = FolderCapture(input_source)
     else:
-        cap = cv2.VideoCapture(input_source)
+        try:
+            input_source = int(args.input_source)
+            cap = cv2.VideoCapture(input_source)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        except ValueError:
+            cap = cv2.VideoCapture(input_source)
 
     if not cap.isOpened():
-        log.error('Failed to open "{}"'.format(args.input_source))
-    if isinstance(cap, cv2.VideoCapture):
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        raise RuntimeError('Failed to open "{}"'.format(input_source))
+
+    ret, frame = cap.read()
+    if not ret:
+        raise RuntimeError("Can't read an image from the input")
 
     if args.no_track:
         tracker = None
@@ -251,13 +240,10 @@ def main():
 
     render_time = 0
 
+    presenter = monitors.Presenter(args.utilization_monitors, 45, (frame.shape[1] // 4, frame.shape[0] // 8))
     log.info('Starting inference...')
     print("To close the application, press 'CTRL+C' here or switch to the output window and press ESC key")
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
+    while ret:
         if not args.keep_aspect_ratio:
             # Resize the image to a target size.
             scale_x = w / frame.shape[1]
@@ -345,6 +331,8 @@ def main():
         if tracker is not None:
             masks_tracks_ids = tracker(masks, classes)
 
+        presenter.drawGraphs(frame)
+
         # Visualize masks.
         frame = visualizer(frame, boxes, classes, scores, masks, texts, masks_tracks_ids)
 
@@ -375,7 +363,11 @@ def main():
             esc_code = 27
             if key == esc_code:
                 break
+            presenter.handleKey(key)
 
+        ret, frame = cap.read()
+
+    print(presenter.reportMeans())
     cv2.destroyAllWindows()
     cap.release()
 

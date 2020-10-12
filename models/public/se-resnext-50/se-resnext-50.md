@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-[ResNext-50 with Squeeze-and-Excitation blocks](https://arxiv.org/pdf/1709.01507.pdf)
+[ResNext-50 with Squeeze-and-Excitation blocks](https://arxiv.org/abs/1709.01507)
 
 ## Example
 
@@ -16,6 +16,11 @@
 | Source framework  | Caffe\*       |
 
 ## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| Top 1  | 78.968%|
+| Top 5  | 94.63% |
 
 ## Performance
 

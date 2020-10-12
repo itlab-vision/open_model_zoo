@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ class TestConfigReader:
         self.global_datasets = [
             {
                 'name': 'global_dataset',
-                'annotation': Path('/pascal_voc_2007_annotation.pickle'),
-                'data_source': Path('/VOCdevkit/VOC2007/JPEGImages'),
+                'annotation': Path('/pascal_voc_2007_annotation.pickle').absolute(),
+                'data_source': Path('/VOCdevkit/VOC2007/JPEGImages').absolute(),
                 'preprocessing': [
                     {
                         'type': 'resize',
@@ -98,13 +98,14 @@ class TestConfigReader:
             'cpu_extensions_mode': None,
             'aocl': None,
             'deprecated_ir_v7': False,
-            'transformations_config_dir': None
+            'transformations_config_dir': None,
+            'model_attributes': None
         })
 
     def test_read_configs_without_global_config(self, mocker):
         config = {'models': [{
             'name': 'model',
-            'launchers': [{'framework': 'dlsdk', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute(), '_models_prefix': Path.cwd()}],
+            'launchers': [{'framework': 'dlsdk', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute()}],
             'datasets': [{'name': 'global_dataset'}]
         }]}
         empty_args = Namespace(**{
@@ -113,7 +114,7 @@ class TestConfigReader:
             'definitions': None, 'config': None, 'stored_predictions': None, 'tf_custom_op_config_dir': None,
             'progress': 'bar', 'target_framework': None, 'target_devices': None, 'log_file': None,
             'tf_obj_detection_api_pipeline_config_path': None, 'target_tags': None, 'cpu_extensions_mode': None,
-            'aocl': None, 'deprecated_ir_v7': False, 'transformations_config_dir': None
+            'aocl': None, 'deprecated_ir_v7': False, 'transformations_config_dir': None, 'model_attributes': None
         })
         mocker.patch('accuracy_checker.utils.get_path', return_value=Path.cwd())
         mocker.patch('yaml.load', return_value=config)
@@ -144,7 +145,7 @@ class TestConfigReader:
             ConfigReader.merge(self.arguments)
 
         error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Accuracy Checker not_models mode is not supported. Please select between evaluations, models, pipelines'
+        assert error_message == 'Accuracy Checker not_models mode is not supported. Please select between evaluations and models.'
 
     def test_empty_models_in_local_config_raises_value_error_exception(self, mocker):
         mocker.patch(self.module + '._read_configs', return_value=(
@@ -201,140 +202,6 @@ class TestConfigReader:
         error_message = str(exception.value).split(sep=': ')[-1]
         assert error_message == 'Each model must specify {}'.format(', '.join(['name', 'launchers', 'datasets']))
 
-    def test_empty_pipeline_in_local_config_raises_value_error_exception(self, mocker):
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {'pipelines': []}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Missed "{}" in local config'.format('pipelines')
-
-    def test_missed_name_in_pipeline_raises_value_error_exception(self, mocker):
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {'pipelines': [{'device_info': None, 'stages': None}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Each pipeline must specify {}'.format(', '.join(['name', 'stages']))
-
-    def test_missed_stages_in_pipeline_raises_value_error_exception(self, mocker):
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {'pipelines': [{'name': None, 'device_info': None}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Each pipeline must specify {}'.format(', '.join(['name', 'stages']))
-
-    def test_invalid_pipeline_raises_value_error_exception(self, mocker):
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {'pipelines': [{'name': None, 'device_info': None, 'stages': None}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Each pipeline must specify {}'.format(', '.join(['name', 'stages']))
-
-    def test_pipeline_empty_stages_raises_value_error_exception(self, mocker):
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {'pipelines': [{'name': 'stage1', 'device_info': [{'framework': 'caffe', 'device': 'CPU'}], 'stages': []}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Each pipeline must specify {}'.format(', '.join(['name', 'stages']))
-
-    def test_pipeline_first_stage_does_not_contain_dataset_raises_value_error_exception(self, mocker):
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {
-                'pipelines': [{'name': 'stage1', 'device_info': [{'framework': 'caffe', 'device': 'CPU'}],
-                               'stages': [{'stage': 'stage1'}]}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'First stage should contain dataset'
-
-    def test_pipeline_contains_several_datasets_raises_value_error_exception(self, mocker):
-        dataset_config = {
-            'name': 'global_dataset',
-            'dataset_meta': 'relative_annotation_path',
-            'data_source': 'relative_source_path',
-            'segmentation_masks_source': 'relative_source_path',
-            'annotation': 'relative_annotation_path'
-        }
-        launcher_config = {'framework': 'dlsdk', 'model': '/absolute_path', 'weights': '/absolute_path'}
-        pipelines_config = [
-            {'name': 'pipeline', 'device_info': [{'framework': 'caffe', 'device': 'CPU'}],
-             'stages': [{'stage': 'stage1', 'dataset': dataset_config},
-                        {'stage': 'stage2', 'dataset': dataset_config, 'launcher': launcher_config, 'metrics': {}}
-                        ]
-             }
-        ]
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {
-                'pipelines': pipelines_config}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Exactly one dataset per pipeline is supported'
-
-    def test_pipeline_without_launchers_raises_value_error_exception(self, mocker):
-        dataset_config = {
-                'name': 'global_dataset',
-                'dataset_meta': 'relative_annotation_path',
-                'data_source': 'relative_source_path',
-                'segmentation_masks_source': 'relative_source_path',
-                'annotation': 'relative_annotation_path'
-            }
-        mocker.patch(self.module + '._read_configs', return_value=(
-            self.global_config, {
-                'pipelines': [{'name': 'stage1', 'device_info': [{'framework': 'caffe', 'device': 'CPU'}],
-                               'stages': [{'stage': 'stage1', 'dataset': dataset_config}]}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Launchers are not specified'
-
-    def test_pipeline_without_metrics_raises_value_error_exception(self, mocker):
-        dataset_config = {
-                'name': 'global_dataset',
-                'dataset_meta': 'relative_annotation_path',
-                'annotation': 'relative_annotation_path'
-            }
-        launcher_config = {'framework': 'dlsdk', 'model': '/absolute_path', 'weights': '/absolute_path'}
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': [{'name': 'stage1', 'device_info': [{'framework': 'caffe', 'device': 'CPU'}],
-                               'stages': [{'stage': 'stage1', 'dataset': dataset_config, 'launcher': launcher_config}]}]}
-        ))
-
-        with pytest.raises(ConfigError) as exception:
-            ConfigReader.merge(self.arguments)
-
-        error_message = str(exception.value).split(sep=': ')[-1]
-        assert error_message == 'Metrics are not specified'
-
     def test_merge_datasets_with_definitions(self, mocker):
         local_config = {'models': [{
             'name': 'model',
@@ -357,10 +224,10 @@ class TestConfigReader:
         local_config = {'models': [{
             'name': 'model',
             'launchers': [{'framework': 'dlsdk', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute()}],
-            'datasets': [{'name': 'global_dataset', 'dataset_meta': '/absolute_path'}]
+            'datasets': [{'name': 'global_dataset', 'dataset_meta': Path('/absolute_path').absolute()}]
         }]}
         expected = self.global_datasets[0]
-        expected['dataset_meta'] = Path('/absolute_path')
+        expected['dataset_meta'] = Path('/absolute_path').absolute()
         mocker.patch(self.module + '._read_configs', return_value=(
             self.global_config, local_config
         ))
@@ -495,213 +362,17 @@ class TestConfigReader:
 
         assert local_config['models'][0]['datasets'][0] == expected
 
-    def test_expand_relative_paths_in_pipeline_stage_dataset_config_using_command_line(self, mocker):
-        dataset_config = {
-                'name': 'global_dataset',
-                'dataset_meta': 'relative_annotation_path',
-                'data_source': 'relative_source_path',
-                'segmentation_masks_source': 'relative_source_path',
-                'annotation': 'relative_annotation_path'
-            }
-        launcher_config = {'framework': 'dlsdk', 'model': Path('/absolute_path').absolute(), 'weights': '/absolute_path'}
-        pipelines_config = [
-            {
-                'name': 'pipeline', 'device_info': [{'framework': 'caffe', 'device': 'CPU'}],
-                'stages': [
-                    {'stage': 'stage1', 'dataset': dataset_config},
-                    {'stage': 'stage2', 'launcher': launcher_config, 'metrics': {}}
-                ]
-            }
-        ]
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': pipelines_config}
-        ))
-        expected = copy.deepcopy(dataset_config)
-        with mock_filesystem(['source/', 'annotations/']) as prefix:
-            expected['annotation'] = prefix / self.arguments.annotations / 'relative_annotation_path'
-            expected['dataset_meta'] = prefix / self.arguments.annotations / 'relative_annotation_path'
-            expected['segmentation_masks_source'] = prefix / self.arguments.source / 'relative_source_path'
-            expected['data_source'] = prefix / self.arguments.source / 'relative_source_path'
-
-            arguments = copy.deepcopy(self.arguments)
-            arguments.bitstreams = None
-            arguments.extensions = None
-            arguments.annotations = prefix / self.arguments.annotations
-            arguments.source = prefix / self.arguments.source
-
-            config = ConfigReader.merge(arguments)[0]
-
-            assert config['pipelines'][0]['stages'][0]['dataset'] == expected
-
-    def test_not_modify_absolute_paths_in_pipeline_stage_dataset_config_using_command_line(self, mocker):
-        dataset_config = {
-            'name': 'global_dataset',
-            'dataset_meta': '/absolute_annotation_meta_path',
-            'data_source': '/absolute_source_path',
-            'annotation': '/absolute_annotation_path'
-        }
-        launcher_config = {'framework': 'dlsdk', 'model': '/absolute_path', 'weights': '/absolute_path'}
-        pipelines_config = [
-            {
-                'name': 'pipeline', 'device_info': [{'device': 'CPU'}],
-                'stages': [
-                    {'stage': 'stage1', 'dataset': dataset_config},
-                    {'stage': 'stage2', 'launcher': launcher_config, 'metrics': {}}
-                ]
-            }
-        ]
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': pipelines_config}
-        ))
-
-        expected = copy.deepcopy(dataset_config)
-        expected['annotation'] = Path('/absolute_annotation_path')
-        expected['dataset_meta'] = Path('/absolute_annotation_meta_path')
-        expected['data_source'] = Path('/absolute_source_path')
-        arguments = copy.deepcopy(self.arguments)
-        arguments.bitstreams = None
-        arguments.extensions = None
-
-        config = ConfigReader.merge(arguments)[0]
-
-        assert config['pipelines'][0]['stages'][0]['dataset'] == expected
-
-    def test_merge_launcher_with_device_info(self, mocker):
-        dataset_config = {
-            'name': 'global_dataset',
-            'dataset_meta': Path('/absolute_annotation_meta_path').absolute(),
-            'data_source': Path('/absolute_source_path').absolute(),
-            'annotation': Path('/absolute_annotation_path').absolute()
-        }
-        launcher_config = {'framework': 'caffe', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute()}
-        device_info = {'device': 'CPU'}
-        expected = copy.deepcopy(launcher_config)
-        expected.update(device_info)
-        pipelines_config = [
-            {
-                'name': 'pipeline', 'device_info': [device_info],
-                'stages': [
-                    {'stage': 'stage1', 'dataset': dataset_config},
-                    {'stage': 'stage2', 'launcher': launcher_config, 'metrics': {}}
-                ]
-            }
-        ]
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': pipelines_config}
-        ))
-
-        config = ConfigReader.merge(self.arguments)[0]
-
-        assert config['pipelines'][0]['stages'][1]['launcher'] == expected
-
-    def test_merge_launcher_with_target_deivce_in_pipeline(self, mocker):
-        dataset_config = {
-            'name': 'global_dataset',
-            'dataset_meta': Path('/absolute_annotation_meta_path').absolute(),
-            'data_source': Path('/absolute_source_path').absolute(),
-            'annotation': Path('/absolute_annotation_path').absolute()
-        }
-        launcher_config = {'framework': 'caffe', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute()}
-        device_info = {'device': 'CPU'}
-        expected = copy.deepcopy(launcher_config)
-        expected.update(device_info)
-        pipelines_config = [
-            {
-                'name': 'pipeline',
-                'stages': [
-                    {'stage': 'stage1', 'dataset': dataset_config},
-                    {'stage': 'stage2', 'launcher': launcher_config, 'metrics': {}}
-                ]
-            }
-        ]
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': pipelines_config}
-        ))
-        args = copy.deepcopy(self.arguments)
-        args.target_devices = ['CPU']
-
-        config = ConfigReader.merge(args)[0]
-
-        assert config['pipelines'][0]['stages'][1]['launcher'] == expected
-
-    def test_merge_launcher_with_2_device_info(self, mocker):
-        dataset_config = {
-            'name': 'global_dataset',
-            'dataset_meta': Path('/absolute_annotation_meta_path').absolute(),
-            'data_source': Path('/absolute_source_path').absolute(),
-            'annotation': Path('/absolute_annotation_path').absolute()
-        }
-        launcher_config = {'framework': 'caffe', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute()}
-        device_info = [{'device': 'CPU'}, {'device': 'GPU'}]
-        expected = [copy.deepcopy(launcher_config), copy.deepcopy(launcher_config)]
-        expected[0].update(device_info[0])
-        expected[1].update(device_info[1])
-        pipelines_config = [
-            {
-                'name': 'pipeline', 'device_info': device_info,
-                'stages': [
-                    {'stage': 'stage1', 'dataset': dataset_config},
-                    {'stage': 'stage2', 'launcher': launcher_config, 'metrics': {}}
-                ]
-            }
-        ]
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': pipelines_config}
-        ))
-
-        config = ConfigReader.merge(self.arguments)[0]
-        assert len(config['pipelines']) == 2
-        assert config['pipelines'][0]['stages'][1]['launcher'] == expected[0]
-        assert config['pipelines'][1]['stages'][1]['launcher'] == expected[1]
-
-    def test_merge_launcher_with_2_target_devices(self, mocker):
-        dataset_config = {
-            'name': 'global_dataset',
-            'dataset_meta': Path('/absolute_annotation_meta_path').absolute(),
-            'data_source': Path('/absolute_source_path').absolute(),
-            'annotation': Path('/absolute_annotation_path').absolute()
-        }
-        launcher_config = {'framework': 'caffe', 'model': Path('/absolute_path').absolute(), 'weights': Path('/absolute_path').absolute()}
-        device_info = [{'device': 'CPU'}, {'device': 'GPU'}]
-        expected = [copy.deepcopy(launcher_config), copy.deepcopy(launcher_config)]
-        expected[0].update(device_info[0])
-        expected[1].update(device_info[1])
-        pipelines_config = [
-            {
-                'name': 'pipeline',
-                'stages': [
-                    {'stage': 'stage1', 'dataset': dataset_config},
-                    {'stage': 'stage2', 'launcher': launcher_config, 'metrics': {}}
-                ]
-            }
-        ]
-        args = copy.deepcopy(self.arguments)
-        args.target_devices = ['CPU', 'GPU']
-        mocker.patch(self.module + '._read_configs', return_value=(
-            None, {
-                'pipelines': pipelines_config}
-        ))
-
-        config = ConfigReader.merge(args)[0]
-        assert len(config['pipelines']) == 2
-        assert config['pipelines'][0]['stages'][1]['launcher'] == expected[0]
-        assert config['pipelines'][1]['stages'][1]['launcher'] == expected[1]
-
     def test_merge_launchers_with_definitions(self, mocker):
         local_config = {'models': [{
             'name': 'model',
-            'launchers': [{'framework': 'dlsdk'}],
+            'launchers': [{'framework': 'dlsdk', 'model': 'model'}],
             'datasets': [{'name': 'global_dataset'}]
         }]}
         mocker.patch(self.module + '._read_configs', return_value=(
             self.global_config, local_config
         ))
         expected = copy.deepcopy(self.get_global_launcher('dlsdk'))
+        expected['model'] = 'model'
         with mock_filesystem(['bitstreams/', 'extensions/']) as prefix:
             expected['bitstream'] = prefix / self.arguments.bitstreams / expected['bitstream']
             expected['cpu_extensions'] = prefix / self.arguments.extensions / expected['cpu_extensions']
@@ -770,7 +441,6 @@ class TestConfigReader:
             expected['cpu_extensions'] = prefix / self.arguments.extensions / 'relative_extensions_path'
             expected['gpu_extensions'] = prefix / self.arguments.extensions / 'relative_extensions_path'
             expected['bitstream'] = prefix / self.arguments.bitstreams / 'relative_bitstreams_path'
-            expected['_models_prefix'] = prefix / self.arguments.models
             args = copy.deepcopy(self.arguments)
             args.model_optimizer = None
             args.converted_models = None
@@ -820,7 +490,6 @@ class TestConfigReader:
             'adapter': 'classification',
             'device': 'CPU',
             '_model_optimizer': self.arguments.model_optimizer,
-            '_models_prefix': self.arguments.models
         }]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
         mocker.patch(self.module + '._read_configs', return_value=(None, local_config))
@@ -846,7 +515,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'dlsdk',
@@ -856,7 +524,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -886,7 +553,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'dlsdk',
@@ -896,7 +562,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -921,7 +586,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -931,7 +595,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -959,7 +622,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -969,7 +631,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -997,7 +658,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -1025,7 +685,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'dlsdk',
@@ -1035,7 +694,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -1063,7 +721,6 @@ class TestConfigReader:
             'adapter': 'classification',
             'device': 'CPU',
             '_model_optimizer': self.arguments.model_optimizer,
-            '_models_prefix': self.arguments.models
         }]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
         mocker.patch(self.module + '._read_configs', return_value=(None, local_config))
@@ -1088,7 +745,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'dlsdk',
@@ -1097,7 +753,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -1124,7 +779,6 @@ class TestConfigReader:
             'weights': Path('/absolute_path').absolute(),
             'adapter': 'classification',
             '_model_optimizer': self.arguments.model_optimizer,
-            '_models_prefix': self.arguments.models
         }]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
         mocker.patch(self.module + '._read_configs', return_value=(None, local_config))
@@ -1148,7 +802,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'dlsdk',
@@ -1157,7 +810,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             }
         ]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
@@ -1183,7 +835,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1216,7 +867,6 @@ class TestConfigReader:
             'adapter': 'classification',
             'device': 'CPU',
             '_model_optimizer': self.arguments.model_optimizer,
-            '_models_prefix': self.arguments.models
         }]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
         mocker.patch(self.module + '._read_configs', return_value=(None, local_config))
@@ -1241,7 +891,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1275,7 +924,6 @@ class TestConfigReader:
             'adapter': 'classification',
             'device': 'CPU',
             '_model_optimizer': self.arguments.model_optimizer,
-            '_models_prefix': self.arguments.models
         }]
         local_config = {'models': [{'name': 'name', 'launchers': config_launchers, 'datasets': [{'name': 'dataset'}]}]}
         mocker.patch(self.module + '._read_configs', return_value=(None, local_config))
@@ -1297,7 +945,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1330,7 +977,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1361,7 +1007,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'dlsdk',
@@ -1370,7 +1015,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'HETERO:CPU,GPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1436,7 +1080,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1471,7 +1114,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',
@@ -1504,7 +1146,6 @@ class TestConfigReader:
                 'adapter': 'classification',
                 'device': 'CPU',
                 '_model_optimizer': self.arguments.model_optimizer,
-                '_models_prefix': self.arguments.models
             },
             {
                 'framework': 'caffe',

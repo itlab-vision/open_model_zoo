@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-Faster R-CNN Resnet-50 model. Used for object detection. For details, see the [paper](https://arxiv.org/pdf/1506.01497v3.pdf).
+Faster R-CNN Resnet-50 model. Used for object detection. For details, see the [paper](https://arxiv.org/abs/1506.01497v3).
 
 ## Example
 
@@ -14,6 +14,13 @@ Faster R-CNN Resnet-50 model. Used for object detection. For details, see the [p
 | GFlops                          | 57.203                                    |
 | MParams                         | 29.162                                    |
 | Source framework                | TensorFlow\*                              |
+
+## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| coco_precision | 27.47%|
+| mAP| 42.87%|
 
 ## Performance
 
@@ -34,14 +41,14 @@ Image, name: `image_tensor`, shape: [1x600x1024x3], format: [BxHxWxC],
 ### Converted Model
 
 1. Image, name: `image_tensor`, shape: [1x3x600x1024], format: [BxCxHxW],
-   where:
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+   - B - batch size
+   - C - number of channels
+   - H - image height
+   - W - image width
 
-   Expected color order: BGR.
+Expected color order: BGR.
 
 2. Information of input image size, name: `image_info`, shape: [1x3], format: [BxC],
    where:

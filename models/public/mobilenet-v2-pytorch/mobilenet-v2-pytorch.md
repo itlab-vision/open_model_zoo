@@ -5,7 +5,7 @@
 MobileNet V2 is image classification model pretrained on ImageNet dataset. This
 is a PyTorch implementation of MobileNetV2 architecture as described in
 the paper ["Inverted Residuals and Linear Bottlenecks: Mobile Networks for Classification,
-Detection and Segmentation"](https://arxiv.org/pdf/1801.04381.pdf).
+Detection and Segmentation"](https://arxiv.org/abs/1801.04381).
 
 The model input is a blob that consists of a single image of "1x3x224x224"
 in RGB order.
@@ -31,6 +31,7 @@ See [here](https://github.com/tonylins/pytorch-mobilenet-v2)
 | Metric | Original model | Converted model |
 |--------|----------------|-----------------|
 | Top 1  | 71.8%          | 71.8%           |
+| Top 5  | 90.396%          | 90.396%       |
 
 ## Performance
 

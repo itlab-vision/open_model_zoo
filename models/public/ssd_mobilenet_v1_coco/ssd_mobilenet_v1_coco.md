@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-The `ssd_mobilenet_v1_coco` model is a [Single-Shot multibox Detection (SSD)](https://arxiv.org/pdf/1801.04381.pdf) network intended to perform object detection. The difference bewteen this model and the `mobilenet-ssd` is that there the `mobilenet-ssd` can only detect face, the `ssd_mobilenet_v1_coco` model can detect objects.
+The `ssd_mobilenet_v1_coco` model is a [Single-Shot multibox Detection (SSD)](https://arxiv.org/abs/1801.04381) network intended to perform object detection. The difference between this model and the `mobilenet-ssd` is that there the `mobilenet-ssd` can only detect face, the `ssd_mobilenet_v1_coco` model can detect objects.
 
 ## Example
 
@@ -16,6 +16,10 @@ The `ssd_mobilenet_v1_coco` model is a [Single-Shot multibox Detection (SSD)](ht
 | Source framework  | TensorFlow\*  |
 
 ## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| coco_precision | 23.3212%|
 
 ## Performance
 
@@ -36,14 +40,14 @@ Image, name - `image_tensor`, shape - [1x300x300x3], format [BxHxWxC],
 ### Converted model
 
 Image, name - `image_tensor`, shape - [1x3x300x300], format [BxCxHxW],
-   where:
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+   - B - batch size
+   - C - number of channels
+   - H - image height
+   - W - image width
 
-   Expected color order - BGR.
+Expected color order: BGR.
 
 ## Output
 

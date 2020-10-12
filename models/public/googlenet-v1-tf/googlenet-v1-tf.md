@@ -5,7 +5,7 @@
 The `googlenet-v1-tf` model is one of the Inception family, designed to perform image classification.
 Like the other Inception models, the `googlenet-v1-tf` model has been pretrained on the ImageNet image database.
 Originally redistributed as a checkpoint file, was converted to frozen graph.
-For details about this family of models, check out the [paper](https://arxiv.org/pdf/1602.07261.pdf), [repository](https://github.com/tensorflow/models/tree/master/research/slim).
+For details about this family of models, check out the [paper](https://arxiv.org/abs/1602.07261), [repository](https://github.com/tensorflow/models/tree/master/research/slim).
 
 ### Steps to Reproduce Conversion to Frozen Graph
 
@@ -47,8 +47,8 @@ python3 freeze.py --ckpt path/to/inception_v1.ckpt --name inception_v1 --num_cla
 
 | Metric | Original model | Converted model |
 | ------ | -------------- | --------------- |
-| Top 1  | 69.81          | 69.81           |
-| Top 5  | 89.61          | 89.61           |
+| Top 1  | 69.81%          | 69.81%           |
+| Top 5  | 89.61%          | 89.61%           |
 
 ## Performance
 

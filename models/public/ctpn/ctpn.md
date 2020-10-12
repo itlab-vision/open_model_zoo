@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-Detecting Text in Natural Image with Connectionist Text Proposal Network. For details see [paper](https://arxiv.org/pdf/1609.03605.pdf).
+Detecting Text in Natural Image with Connectionist Text Proposal Network. For details see [paper](https://arxiv.org/abs/1609.03605).
 
 ## Example
 
@@ -14,6 +14,12 @@ Detecting Text in Natural Image with Connectionist Text Proposal Network. For de
 | GFlops                          | 55.813                                    |
 | MParams                         | 17.237                                    |
 | Source framework                | TensorFlow\*                              |
+
+## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| hmean  | 73.67%|
 
 ## Performance
 
@@ -35,14 +41,14 @@ Image, name: `image_tensor`, shape: [1x600x600x3], format: [BxHxWxC],
 ### Converted Model
 
 Image, name: `Placeholder`, shape: [1x3x600x600], format: [BxCxHxW],
-   where:
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+   - B - batch size
+   - C - number of channels
+   - H - image height
+   - W - image width
 
-   Expected color order: BGR.
+Expected color order: BGR.
 
 ## Output
 

@@ -14,6 +14,7 @@
  limitations under the License.
 """
 
+import logging as log
 import time
 from os.path import exists
 from multiprocessing import Process, Value, Array
@@ -106,9 +107,11 @@ class VideoStream:
 
         if self._frame_generator_process is not None:
             self._frame_generator_process.terminate()
+            self._frame_generator_process.join()
 
         if self._producer_process is not None:
             self._producer_process.terminate()
+            self._producer_process.join()
 
     @staticmethod
     def _frame_generator(input_source, out_frame, frame_shape, finish_flag):
@@ -118,10 +121,15 @@ class VideoStream:
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
         source_fps = cap.get(cv2.CAP_PROP_FPS)
-        trg_time_step = 1.0 / float(source_fps)
+        if source_fps > 0:
+            trg_time_step = 1.0 / source_fps
+        else:
+            log.warning('Got a non-positive value as FPS of the input. Interpret it as 30 FPS')
+            trg_time_step = 1.0 / 30.0
 
-        start_time = time.perf_counter()
         while True:
+            start_time = time.perf_counter()
+
             _, frame = cap.read()
             if frame is None:
                 break
@@ -132,7 +140,6 @@ class VideoStream:
 
             end_time = time.perf_counter()
             elapsed_time = end_time - start_time
-            start_time = end_time
             rest_time = trg_time_step - elapsed_time
             if rest_time > 0.0:
                 time.sleep(rest_time)
@@ -149,8 +156,9 @@ class VideoStream:
         batch_shape = [batch_size] + image_shape
         frame_buffer = []
 
-        start_time = time.perf_counter()
         while not finish_flag.value:
+            start_time = time.perf_counter()
+
             with input_frame.get_lock():
                 in_frame_buffer = np.frombuffer(input_frame.get_obj(), dtype=np.uint8)
                 frame = np.copy(in_frame_buffer.reshape(image_shape))
@@ -170,7 +178,6 @@ class VideoStream:
 
             end_time = time.perf_counter()
             elapsed_time = end_time - start_time
-            start_time = end_time
             rest_time = trg_time_step - elapsed_time
             if rest_time > 0.0:
                 time.sleep(rest_time)

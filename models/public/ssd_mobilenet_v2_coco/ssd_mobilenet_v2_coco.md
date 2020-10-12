@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-The `ssd_mobilenet_v2_coco` model is a [Single-Shot multibox Detection (SSD)](https://arxiv.org/pdf/1801.04381.pdf) network intended to perform object detection. The model has been trained from the Common Objects in Context (COCO) image dataset.
+The `ssd_mobilenet_v2_coco` model is a [Single-Shot multibox Detection (SSD)](https://arxiv.org/abs/1801.04381) network intended to perform object detection. The model has been trained from the Common Objects in Context (COCO) image dataset.
 
 The model input is a blob that consists of a single image of 1x3x300x300 in RGB order.
 
@@ -20,6 +20,10 @@ The model output is a typical vector containing the tracked object data, as prev
 | Source framework  | TensorFlow\*    |
 
 ## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| coco_precision | 24.9452%|
 
 ## Performance
 
@@ -51,9 +55,9 @@ Channel order is `BGR`.
 
 ## Output
 
-> **NOTE** output format changes after Model Optimizer conversion. To find detailed explanation of changes, go to [Model Optimizer development guide](http://docs.openvinotoolkit.org/latest/_docs_MO_DG_prepare_model_convert_model_tf_specific_Convert_Object_Detection_API_Models.html)
+> **NOTE** output format changes after Model Optimizer conversion. To find detailed explanation of changes, go to [Model Optimizer development guide](https://docs.openvinotoolkit.org/latest/_docs_MO_DG_prepare_model_convert_model_tf_specific_Convert_Object_Detection_API_Models.html)
 
-### Original model 
+### Original model
 
 1. Classifier, name - `detection_classes`, contains predicted bounding boxes classes in range [1, 91]. The model was trained on Microsoft\* COCO dataset version with 90 categories of object.
 2. Probability, name - `detection_scores`, contains probability of detected bounding boxes.

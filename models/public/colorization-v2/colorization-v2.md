@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-The `colorization-v2` model is one of the [colorization](https://arxiv.org/pdf/1603.08511)
+The `colorization-v2` model is one of the [colorization](https://arxiv.org/abs/1603.08511)
 group of models designed to perform image colorization. For details
 about this family of models, check out the [repository](https://github.com/richzhang/colorization).
 
@@ -23,10 +23,10 @@ Model give as output predict A- and B-channels of LAB-image.
 ## Accuracy
 
 The accuracy metrics calculated on ImageNet
-validation dataset using [VGG16](https://arxiv.org/pdf/1409.1556.pdf) caffe
+validation dataset using [VGG16](https://arxiv.org/abs/1409.1556) caffe
 model and colorization as preprocessing.
 
-For preprocessing `rgb -> gray -> coloriaztion` recieved values:
+For preprocessing `rgb -> gray -> colorization` received values:
 
 | Metric         | Value with preprocessing   | Value without preprocessing |
 |----------------|-----------------------------|-----------------------------|
@@ -84,7 +84,7 @@ Image, name - `class8_313_rh`\*,  shape - `1,313,56,56`, format is `B,C,H,W` whe
 in order for network to work,
 you need to reproduce `class8_ab` layer with the coefficients that
 downloaded separately with the model. More detailed information can be found
->[this](https://github.com/richzhang/colorization/blob/master/demo/colorization_demo_v2.ipynb).
+>[this](https://github.com/richzhang/colorization/blob/caffe/demo/colorization_demo_v2.ipynb).
 
 ## Legal Information
 The original model is distributed under the following

@@ -8,6 +8,7 @@ It uses pip-compile (https://github.com/jazzband/pip-tools), so install that
 before running it.
 """
 
+import argparse
 import os
 import subprocess
 import sys
@@ -20,8 +21,18 @@ from pathlib import Path
 EXPECTED_PYTHON_VERSION = (3, 5)
 
 repo_root = Path(__file__).resolve().parent.parent
+script_name = Path(__file__).name
 
-def pip_compile(target, *sources):
+def fixup_req_file(req_path, path_placeholders):
+    contents = req_path.read_text()
+
+    for path, placeholder in path_placeholders:
+        contents = contents.replace('-r {}/'.format(path), '-r ${{{}}}/'.format(placeholder))
+
+    contents = "# use {} to update this file\n\n".format(script_name) + contents
+    req_path.write_text(contents)
+
+def pip_compile(target, *sources, upgrade=False):
     print('updating {}...'.format(target), flush=True)
 
     # Use --no-header, since the OpenVINO install path may vary between machines,
@@ -30,10 +41,15 @@ def pip_compile(target, *sources):
 
     subprocess.run(
         [sys.executable, '-mpiptools', 'compile',
-            '--no-header', '--upgrade', '--quiet', '-o', target, '--', *map(str, sources)],
+            *(['--upgrade'] if upgrade else []),
+            '--no-header', '--quiet', '-o', target, '--', *map(str, sources)],
         check=True, cwd=str(repo_root))
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--upgrade', action='store_true', help='Bump package versions')
+    args = parser.parse_args()
+
     if sys.version_info[:2] != EXPECTED_PYTHON_VERSION:
         sys.exit("run this with Python {}".format('.'.join(map(str, EXPECTED_PYTHON_VERSION))))
 
@@ -42,16 +58,21 @@ def main():
 
     openvino_dir = Path(os.environ['INTEL_OPENVINO_DIR'])
 
-    pip_compile('ci/requirements-ac.txt',
-        'tools/accuracy_checker/requirements.in')
-    pip_compile('ci/requirements-ac-test.txt',
-        'tools/accuracy_checker/requirements.in', 'tools/accuracy_checker/requirements-test.in')
-    pip_compile('ci/requirements-conversion.txt',
+    def pc(target, *sources):
+        pip_compile(target, *sources, upgrade=args.upgrade)
+        fixup_req_file(repo_root / target, [(openvino_dir, 'INTEL_OPENVINO_DIR')])
+
+    pc('ci/requirements-ac.txt',
+        'tools/accuracy_checker/requirements-core.in', 'tools/accuracy_checker/requirements.in')
+    pc('ci/requirements-ac-test.txt',
+        'tools/accuracy_checker/requirements.in', 'tools/accuracy_checker/requirements-test.in', 
+        'tools/accuracy_checker/requirements-core.in')
+    pc('ci/requirements-conversion.txt',
         'tools/downloader/requirements-pytorch.in', 'tools/downloader/requirements-caffe2.in',
         openvino_dir / 'deployment_tools/model_optimizer/requirements.txt')
-    pip_compile('ci/requirements-demos.txt',
+    pc('ci/requirements-demos.txt',
         'demos/python_demos/requirements.txt', openvino_dir / 'python/requirements.txt')
-    pip_compile('ci/requirements-downloader.txt',
+    pc('ci/requirements-downloader.txt',
         'tools/downloader/requirements.in')
 
 if __name__ == '__main__':

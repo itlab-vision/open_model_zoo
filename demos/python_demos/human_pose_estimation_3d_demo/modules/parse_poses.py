@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
  Copyright (c) 2019 Intel Corporation
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +14,12 @@
 import numpy as np
 
 from modules.pose import Pose, propagate_ids
-from pose_extractor import extract_poses
+try:
+    from pose_extractor import extract_poses
+except ImportError as err:
+    raise ImportError("Module 'pose_extractor' not found. "
+                      "Please build module according to documentation before usage.") from err
+
 
 AVG_PERSON_HEIGHT = 180
 

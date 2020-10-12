@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-Multi-person 3D human pose estimation model based on the [Lightweight OpenPose](https://arxiv.org/pdf/1811.12004.pdf) and [Single-Shot Multi-Person 3D Pose Estimation From Monocular RGB](https://arxiv.org/pdf/1712.03453.pdf) papers.
+Multi-person 3D human pose estimation model based on the [Lightweight OpenPose](https://arxiv.org/abs/1811.12004) and [Single-Shot Multi-Person 3D Pose Estimation From Monocular RGB](https://arxiv.org/abs/1712.03453) papers.
 
 ## Example
 
@@ -21,15 +21,15 @@ Multi-person 3D human pose estimation model based on the [Lightweight OpenPose](
 
 ## Inputs
 
-1. Name: `data`, shape: `[1x3x256x448]`. An input image in the `[BxCxHxW]` format,
-   where:
+Name: `data`, shape: `[1x3x256x448]`. An input image in the `[BxCxHxW]` format,
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+- B - batch size
+- C - number of channels
+- H - image height
+- W - image width
 
-   Expected color order is BGR.
+Expected color order is BGR.
 
 ## Outputs
 

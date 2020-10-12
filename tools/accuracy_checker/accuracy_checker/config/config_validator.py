@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -79,6 +79,8 @@ class ConfigValidator(BaseValidator):
         if fields:
             for name in fields.keys():
                 self.fields[name] = fields[name]
+                if fields[name].field_uri is None:
+                    fields[name].field_uri = "{}.{}".format(config_uri, name)
         else:
             for name in dir(self):
                 value = getattr(self, name)
@@ -150,7 +152,7 @@ class BaseField(BaseValidator):
 
     @property
     def type(self):
-        return str
+        return None
 
     def required(self):
         return not self.optional and self.default is None
@@ -163,7 +165,7 @@ class BaseField(BaseValidator):
                     parameters_dict[key] = self.__dict__[key].parameters()
                 else:
                     parameters_dict[key] = self.__dict__[key]
-            parameters_dict['type'] = type(self.type()).__name__
+            parameters_dict['type'] = type((self.type or str)()).__name__
 
         return parameters_dict
 
@@ -273,7 +275,7 @@ class ListField(BaseField):
 
 
 class InputField(BaseField):
-    INPUTS_TYPES = ('CONST_INPUT', 'INPUT', 'IMAGE_INFO')
+    INPUTS_TYPES = ('CONST_INPUT', 'INPUT', 'IMAGE_INFO', 'LSTM_INPUT')
     LAYOUT_TYPES = ('NCHW', 'NHWC', 'NCWH', 'NWHC')
     PRECISIONS = ('FP32', 'FP16', 'U8', 'U16', 'I8', 'I16', 'I32', 'I64')
 
@@ -288,7 +290,7 @@ class InputField(BaseField):
         self.precision = StringField(optional=True, description='Input precision', choices=InputField.PRECISIONS)
 
     def validate(self, entry, field_uri=None):
-        entry['optional'] = entry['type'] != 'CONST_INPUT'
+        entry['optional'] = entry['type'] not in ['CONST_INPUT', 'LSTM_INPUT']
         super().validate(entry, field_uri)
 
 
@@ -343,11 +345,13 @@ class NumberField(BaseField):
     def type(self):
         return self._value_type
 
+
 class PathField(BaseField):
-    def __init__(self, is_directory=False, check_exists=True, **kwargs):
+    def __init__(self, is_directory=False, check_exists=True, file_or_directory=False, **kwargs):
         super().__init__(**kwargs)
         self.is_directory = is_directory
         self.check_exists = check_exists
+        self.file_or_directory = file_or_directory
 
     def validate(self, entry, field_uri=None):
         super().validate(entry, field_uri)
@@ -356,7 +360,7 @@ class PathField(BaseField):
 
         field_uri = field_uri or self.field_uri
         try:
-            get_path(entry, self.is_directory, self.check_exists)
+            get_path(entry, self.is_directory, self.check_exists, self.file_or_directory)
         except TypeError:
             self.raise_error(entry, field_uri, "values is expected to be path-like")
         except FileNotFoundError:

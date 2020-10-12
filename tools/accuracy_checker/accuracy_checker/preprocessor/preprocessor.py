@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ from ..dependency import ClassProvider
 from ..utils import get_parameter_value_from_config
 
 
-MULTI_INFER_PREPROCESSORS = ['tiling', 'normalize3d', 'image_pyramid']
+MULTI_INFER_PREPROCESSORS = ['tiling', 'normalize3d', 'image_pyramid', 'clip_audio']
 
 
 class Preprocessor(ClassProvider):

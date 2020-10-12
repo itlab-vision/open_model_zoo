@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
  Copyright (C) 2018-2019 Intel Corporation
 
@@ -14,7 +14,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 """
-from __future__ import print_function
+
 import sys
 import os
 from argparse import ArgumentParser, SUPPRESS
@@ -22,7 +22,7 @@ import cv2
 import numpy as np
 import logging as log
 from time import time
-from openvino.inference_engine import IENetwork, IECore
+from openvino.inference_engine import IECore
 
 classes_color_map = [
     (150, 150, 150),
@@ -72,41 +72,30 @@ def build_argparser():
 def main():
     log.basicConfig(format="[ %(levelname)s ] %(message)s", level=log.INFO, stream=sys.stdout)
     args = build_argparser().parse_args()
-    model_xml = args.model
-    model_bin = os.path.splitext(model_xml)[0] + ".bin"
 
     log.info("Creating Inference Engine")
     ie = IECore()
     if args.cpu_extension and 'CPU' in args.device:
         ie.add_extension(args.cpu_extension, "CPU")
     # Read IR
-    log.info("Loading network files:\n\t{}\n\t{}".format(model_xml, model_bin))
-    net = IENetwork(model=model_xml, weights=model_bin)
+    log.info("Loading network")
+    net = ie.read_network(args.model, os.path.splitext(args.model)[0] + ".bin")
 
-    if "CPU" in args.device:
-        supported_layers = ie.query_network(net, "CPU")
-        not_supported_layers = [l for l in net.layers.keys() if l not in supported_layers]
-        if len(not_supported_layers) != 0:
-            log.error("Following layers are not supported by the plugin for specified device {}:\n {}".
-                      format(args.device, ', '.join(not_supported_layers)))
-            log.error("Please try to specify cpu extensions library path in sample's command line parameters using -l "
-                      "or --cpu_extension command line argument")
-            sys.exit(1)
-    assert len(net.inputs.keys()) == 1, "Sample supports only single input topologies"
+    assert len(net.input_info) == 1, "Sample supports only single input topologies"
     assert len(net.outputs) == 1, "Sample supports only single output topologies"
 
     log.info("Preparing input blobs")
-    input_blob = next(iter(net.inputs))
+    input_blob = next(iter(net.input_info))
     out_blob = next(iter(net.outputs))
     net.batch_size = len(args.input)
 
     # NB: This is required to load the image as uint8 np.array
     #     Without this step the input blob is loaded in FP32 precision,
     #     this requires additional operation and more memory.
-    net.inputs[input_blob].precision = "U8"
+    net.input_info[input_blob].precision = "U8"
 
     # Read and pre-process input images
-    n, c, h, w = net.inputs[input_blob].shape
+    n, c, h, w = net.input_info[input_blob].input_data.shape
     images = np.ndarray(shape=(n, c, h, w))
     for i in range(n):
         image = cv2.imread(args.input[i])
@@ -144,7 +133,7 @@ def main():
                 else:
                     pixel_class = np.argmax(data[:, i, j])
                 classes_map[i, j, :] = classes_color_map[min(pixel_class, 20)]
-        out_img = os.path.join(os.path.dirname(__file__), "out_{}.bmp".format(batch))
+        out_img = "out_{}.bmp".format(batch)
         cv2.imwrite(out_img, classes_map)
         log.info("Result image was saved to {}".format(out_img))
     log.info("This demo is an API example, for any performance measurements please use the dedicated benchmark_app tool "

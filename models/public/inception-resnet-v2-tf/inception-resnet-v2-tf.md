@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-The `inception-resnet-v2` model is one of the Inception family of models designed to perform image classification. For details about this family of models, check out the [paper](https://arxiv.org/pdf/1602.07261.pdf).
+The `inception-resnet-v2` model is one of the Inception family of models designed to perform image classification. For details about this family of models, check out the [paper](https://arxiv.org/abs/1602.07261).
 
 ## Example
 
@@ -14,6 +14,13 @@ The `inception-resnet-v2` model is one of the Inception family of models designe
 | GFlops                          | 22.227                                    |
 | MParams                         | 30.223                                    |
 | Source framework                | TensorFlow\*                              |
+
+## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| Top 1  | 80.14% |
+| Top 5  | 95.10% |
 
 ## Performance
 
@@ -35,14 +42,14 @@ Image, name: `input` , shape: [1x299x299x3], format: [BxHxWxC],
 ### Converted Model
 
 Image, name: `input`, shape: [1x3x299x299], format: [BxCxHxW],
-   where:
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+   - B - batch size
+   - C - number of channels
+   - H - image height
+   - W - image width
 
-   Expected color order: BGR.
+Expected color order: BGR.
 
 ## Output
 

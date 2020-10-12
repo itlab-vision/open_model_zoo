@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-The `densenet-161` model is one of the [DenseNet](https://arxiv.org/pdf/1608.06993)
+The `densenet-161` model is one of the [DenseNet](https://arxiv.org/abs/1608.06993)
 group of models designed to perform image classification. The main difference with
 the `densenet-121` model is the size and accuracy of the model. The `densenet-161`
 is much larger at 100MB in size vs the `densenet-121` model's roughly 31MB size.
@@ -31,7 +31,12 @@ the 1000 different classifications matching those in the ImageNet database.
 
 ## Accuracy
 
-See [https://github.com/shicai/DenseNet-Caffe]().
+| Metric | Value |
+| ------ | ----- |
+| Top 1  | 77.55% |
+| Top 5  | 93.92% |
+
+See [the original repository](https://github.com/shicai/DenseNet-Caffe).
 
 ## Performance
 
@@ -46,7 +51,7 @@ Image, name - `data`,  shape - `1,3,224,224`, format is `B,C,H,W` where:
 - `H` - height
 - `W` - width
 
-Channel order is `BGR`. 
+Channel order is `BGR`.
 Mean values - [103.94,116.78,123.68], scale value - 58.8235294117647
 
 ### Converted model

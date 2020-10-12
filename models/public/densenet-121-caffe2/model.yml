@@ -16,7 +16,7 @@ description: >-
   This is a Caffe2* version of "densenet-121" model, one of the DenseNet group of
   models designed to perform image classification. This model was converted from Caffe*
   to Caffe2* format.  For details see repository <https://github.com/caffe2/models/tree/master/densenet121>,
-  paper <https://arxiv.org/pdf/1608.06993.pdf>.
+  paper <https://arxiv.org/abs/1608.06993>.
 task_type: classification
 files:
   - name: predict_net.pb
@@ -28,6 +28,7 @@ files:
     sha256: a3650579bc883a1755750994507c48d84d0f75d193e304eb8caf5031acb5f028
     source: https://s3.amazonaws.com/download.caffe2.ai/models/densenet121/init_net.pb
 framework: caffe2
+quantizable: yes
 conversion_to_onnx_args:
   - --model-path=$dl_dir/predict_net.pb
   - --model-name=densenet-121-caffe2

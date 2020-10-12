@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ from .detection_representation import (
     Detection,
     DetectionAnnotation,
     DetectionPrediction,
+    AttributeDetectionAnnotation,
+    AttributeDetectionPrediction,
     ActionDetectionAnnotation,
     ActionDetectionPrediction
 )
@@ -40,7 +42,8 @@ from .segmentation_representation import (
     BrainTumorSegmentationAnnotation,
     BrainTumorSegmentationPrediction,
     CoCoInstanceSegmentationAnnotation,
-    CoCocInstanceSegmentationPrediction
+    CoCocInstanceSegmentationPrediction,
+    OAR3DTilingSegmentationAnnotation,
 )
 from .character_recognition_representation import (
     CharacterRecognition,
@@ -53,8 +56,11 @@ from .regression_representation import (
     RegressionPrediction,
     FacialLandmarksAnnotation,
     FacialLandmarksPrediction,
+    FacialLandmarks3DAnnotation,
+    FacialLandmarks3DPrediction,
     GazeVectorAnnotation,
-    GazeVectorPrediction
+    GazeVectorPrediction,
+    FeaturesRegressionAnnotation
 )
 from .multilabel_recognition import MultiLabelRecognitionAnnotation, MultiLabelRecognitionPrediction
 from .super_resolution_representation import SuperResolutionAnnotation, SuperResolutionPrediction
@@ -67,8 +73,20 @@ from .nlp_representation import (
     MachineTranslationPrediction,
     QuestionAnsweringAnnotation,
     QuestionAnsweringPrediction,
-    TextClassificationAnnotation
+    QuestionAnsweringEmbeddingAnnotation,
+    QuestionAnsweringEmbeddingPrediction,
+    TextClassificationAnnotation,
+    LanguageModelingAnnotation,
+    LanguageModelingPrediction,
+    QuestionAnsweringBiDAFAnnotation
 )
+from .image_inpainting import ImageInpaintingAnnotation, ImageInpaintingPrediction
+from .style_transfer import StyleTransferAnnotation, StyleTransferPrediction
+
+from .depth_estimation import DepthEstimationAnnotation, DepthEstimationPrediction
+from .image_processing import ImageProcessingAnnotation, ImageProcessingPrediction
+from .quality_assessment import QualityAssessmentAnnotation, QualityAssessmentPrediction
+from .dna_sequence import DNASequenceAnnotation, DNASequencePrediction
 
 __all__ = [
     'BaseRepresentation',
@@ -82,6 +100,8 @@ __all__ = [
     'DetectionAnnotation',
     'DetectionPrediction',
 
+    'AttributeDetectionAnnotation',
+    'AttributeDetectionPrediction',
     'ActionDetectionAnnotation',
     'ActionDetectionPrediction',
 
@@ -95,6 +115,7 @@ __all__ = [
 
     'BrainTumorSegmentationAnnotation',
     'BrainTumorSegmentationPrediction',
+    'OAR3DTilingSegmentationAnnotation',
 
     'CoCoInstanceSegmentationAnnotation',
     'CoCocInstanceSegmentationPrediction',
@@ -111,14 +132,23 @@ __all__ = [
     'RegressionPrediction',
     'FacialLandmarksAnnotation',
     'FacialLandmarksPrediction',
+    'FacialLandmarks3DAnnotation',
+    'FacialLandmarks3DPrediction',
     'GazeVectorAnnotation',
     'GazeVectorPrediction',
+    'FeaturesRegressionAnnotation',
 
     'MultiLabelRecognitionAnnotation',
     'MultiLabelRecognitionPrediction',
 
     'SuperResolutionAnnotation',
     'SuperResolutionPrediction',
+    'ImageInpaintingAnnotation',
+    'ImageInpaintingPrediction',
+    'ImageProcessingAnnotation',
+    'ImageProcessingPrediction',
+    'StyleTransferAnnotation',
+    'StyleTransferPrediction',
 
     'TextDetectionAnnotation',
     'TextDetectionPrediction',
@@ -136,5 +166,19 @@ __all__ = [
     'MachineTranslationPrediction',
     'QuestionAnsweringAnnotation',
     'QuestionAnsweringPrediction',
-    'TextClassificationAnnotation'
+    'QuestionAnsweringEmbeddingAnnotation',
+    'QuestionAnsweringEmbeddingPrediction',
+    'QuestionAnsweringBiDAFAnnotation',
+    'TextClassificationAnnotation',
+    'LanguageModelingAnnotation',
+    'LanguageModelingPrediction',
+
+    'DepthEstimationAnnotation',
+    'DepthEstimationPrediction',
+
+    'QualityAssessmentAnnotation',
+    'QualityAssessmentPrediction',
+
+    'DNASequenceAnnotation',
+    'DNASequencePrediction',
 ]

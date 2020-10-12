@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ from ..representation import DetectionPrediction, DetectionAnnotation
 from ..postprocessor.postprocessor import Postprocessor
 from ..utils import get_size_from_config
 from ..config import NumberField
+
 
 class FRCNNPostprocessingBboxResize(Postprocessor):
     """
@@ -78,7 +79,7 @@ class FRCNNPostprocessingBboxResize(Postprocessor):
                                len(geometric_operations)))
 
     def process_image(self, annotations, predictions):
-        raise RuntimeError("Since `process_image_with_metadata` is overriden, this method MUST NOT be called")
+        raise RuntimeError("Since `process_image_with_metadata` is overridden, this method MUST NOT be called")
 
     def process_image_with_metadata(self, annotations, predictions, image_metadata=None):
         assert image_metadata and 'geometric_operations' in image_metadata, (

@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+from collections import OrderedDict
 
 from ..utils import read_json, read_txt, check_file_existence
 from ..representation import ClassificationAnnotation
@@ -48,7 +50,10 @@ class ActionRecognitionConverter(BaseFormatConverter):
             'dataset_meta_file': PathField(
                 description='path to json file with dataset meta (e.g. label_map)', optional=True
             ),
-            'numpy_input': BoolField(description='use numpy arrays instead of images', optional=True, default=False)
+            'numpy_input': BoolField(description='use numpy arrays instead of images', optional=True, default=False),
+            'num_samples': NumberField(
+                description='number of samples used for annotation', optional=True, value_type=int, min_value=1
+            )
         })
 
         return params
@@ -62,9 +67,10 @@ class ActionRecognitionConverter(BaseFormatConverter):
         self.subset = self.get_value_from_config('subset')
         self.dataset_meta = self.get_value_from_config('dataset_meta_file')
         self.numpy_input = self.get_value_from_config('numpy_input')
+        self.num_samples = self.get_value_from_config('num_samples')
 
     def convert(self, check_content=False, progress_callback=None, progress_interval=100, **kwargs):
-        full_annotation = read_json(self.annotation_file)
+        full_annotation = read_json(self.annotation_file, object_pairs_hook=OrderedDict)
         data_ext = 'jpg' if not self.numpy_input else 'npy'
         label_map = dict(enumerate(full_annotation['labels']))
         if self.dataset_meta:
@@ -74,11 +80,11 @@ class ActionRecognitionConverter(BaseFormatConverter):
                 label_map = verify_label_map(label_map)
             elif 'labels' in dataset_meta:
                 label_map = dict(enumerate(dataset_meta['labels']))
-        video_names, annotation = self.get_video_names_and_annotations(full_annotation['database'], self.subset)
+        video_names, annotations = self.get_video_names_and_annotations(full_annotation['database'], self.subset)
         class_to_idx = {v: k for k, v in label_map.items()}
 
         videos = []
-        for video_name, annotation in zip(video_names, annotation):
+        for video_name, annotation in zip(video_names, annotations):
             video_path = self.data_dir / video_name
             if not video_path.exists():
                 continue
@@ -103,6 +109,8 @@ class ActionRecognitionConverter(BaseFormatConverter):
             }
 
             videos.append(sample)
+            if self.num_samples and len(videos) == self.num_samples:
+                break
 
         videos = sorted(videos, key=lambda v: v['video_id'].split('/')[-1])
 
@@ -129,7 +137,8 @@ class ActionRecognitionConverter(BaseFormatConverter):
 
     @staticmethod
     def get_clips(video, clips_per_video, clip_duration, temporal_stride=1, file_ext='jpg'):
-        num_frames = video['n_frames']
+        shift = int(file_ext == 'npy')
+        num_frames = video['n_frames'] - shift
         clip_duration *= temporal_stride
 
         if clips_per_video == 0:

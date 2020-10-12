@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Intel Corporation
+# Copyright (c) 2020 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,28 +17,28 @@ description: >-
 task_type: detection
 files:
   - name: FP32/face-detection-retail-0005.xml
-    size: 145896
-    sha256: 2a105498942571686ac856a6dcbe9ef33b54039d69bb861f5d3a98b58bbef016
-    source: https://download.01.org/opencv/2020/openvinotoolkit/2020.1/open_model_zoo/models_bin/1/face-detection-retail-0005/FP32/face-detection-retail-0005.xml
+    size: 158758
+    sha256: c7e263f7c5fdcf68112b28f165d1a11f32e935882f76c9c951801d369d2d6b74
+    source: https://download.01.org/opencv/2021/openvinotoolkit/2021.1/open_model_zoo/models_bin/2/face-detection-retail-0005/FP32/face-detection-retail-0005.xml
   - name: FP32/face-detection-retail-0005.bin
-    size: 4083132
-    sha256: bc174f03f2314bdbb7e1abfb5136ccb34507d8225f87b040c5a77493f1a6c307
-    source: https://download.01.org/opencv/2020/openvinotoolkit/2020.1/open_model_zoo/models_bin/1/face-detection-retail-0005/FP32/face-detection-retail-0005.bin
+    size: 4083112
+    sha256: 27965fe54915256c9f0b134a89a846df07898492659d1751ad5a4a95f7486a14
+    source: https://download.01.org/opencv/2021/openvinotoolkit/2021.1/open_model_zoo/models_bin/2/face-detection-retail-0005/FP32/face-detection-retail-0005.bin
   - name: FP16/face-detection-retail-0005.xml
-    size: 145815
-    sha256: 72732d512f311ab1fc96d76c5caaf253e84a944fb0899fc5bf3e4cdbebf2f827
-    source: https://download.01.org/opencv/2020/openvinotoolkit/2020.1/open_model_zoo/models_bin/1/face-detection-retail-0005/FP16/face-detection-retail-0005.xml
+    size: 158677
+    sha256: e541424c58bab8d20ef9514156287ad7accf12b843b6df3cd5072775153268cd
+    source: https://download.01.org/opencv/2021/openvinotoolkit/2021.1/open_model_zoo/models_bin/2/face-detection-retail-0005/FP16/face-detection-retail-0005.xml
   - name: FP16/face-detection-retail-0005.bin
-    size: 2041618
-    sha256: fef3746455eec3d1e69730b556809a225a4f714b6bc0b4bacfe5c7bb1a944105
-    source: https://download.01.org/opencv/2020/openvinotoolkit/2020.1/open_model_zoo/models_bin/1/face-detection-retail-0005/FP16/face-detection-retail-0005.bin
-  - name: FP32-INT8/face-detection-retail-0005.xml
-    size: 414518
-    sha256: bfe8445ef8005454f9d2d9d5857c0e9de37c3e9dd474d6fb8882a32e2461e138
-    source: https://download.01.org/opencv/2020/openvinotoolkit/2020.1/open_model_zoo/models_bin/1/face-detection-retail-0005/FP32-INT8/face-detection-retail-0005.xml
-  - name: FP32-INT8/face-detection-retail-0005.bin
-    size: 4214360
-    sha256: 0525d556261936e710d8b540f540718869e36c2e7347ee111dd68c259f6e5d54
-    source: https://download.01.org/opencv/2020/openvinotoolkit/2020.1/open_model_zoo/models_bin/1/face-detection-retail-0005/FP32-INT8/face-detection-retail-0005.bin
+    size: 2041598
+    sha256: 48a974efac09b993eaae2316466dc616c419acec0e109d6ae8e0ac061f9214f0
+    source: https://download.01.org/opencv/2021/openvinotoolkit/2021.1/open_model_zoo/models_bin/2/face-detection-retail-0005/FP16/face-detection-retail-0005.bin
+  - name: FP16-INT8/face-detection-retail-0005.xml
+    size: 445434
+    sha256: b2ef52c8400546776747a3326d6339e271ff992f9917bb3644e946b7ebef909e
+    source: https://download.01.org/opencv/2021/openvinotoolkit/2021.1/open_model_zoo/models_bin/2/face-detection-retail-0005/FP16-INT8/face-detection-retail-0005.xml
+  - name: FP16-INT8/face-detection-retail-0005.bin
+    size: 1098793
+    sha256: 9b475378a4f4119712e0e345a42fff6608b24d9b47efd97ccc9495c0a41fe605
+    source: https://download.01.org/opencv/2021/openvinotoolkit/2021.1/open_model_zoo/models_bin/2/face-detection-retail-0005/FP16-INT8/face-detection-retail-0005.bin
 framework: dldt
 license: https://raw.githubusercontent.com/opencv/open_model_zoo/master/LICENSE

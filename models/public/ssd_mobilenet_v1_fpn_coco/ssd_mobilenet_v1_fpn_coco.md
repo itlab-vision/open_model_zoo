@@ -2,7 +2,7 @@
 
 ## Use Case and High-Level Description
 
-MobileNetV1 FPN is used for object detection. For details, see the [paper](https://arxiv.org/pdf/1807.03284.pdf).
+MobileNetV1 FPN is used for object detection. For details, see the [paper](https://arxiv.org/abs/1807.03284).
 
 ## Example
 
@@ -16,6 +16,10 @@ MobileNetV1 FPN is used for object detection. For details, see the [paper](https
 | Source framework  | TensorFlow\*  |
 
 ## Accuracy
+
+| Metric | Value |
+| ------ | ----- |
+| coco_precision | 35.5453%|
 
 ## Performance
 
@@ -36,14 +40,14 @@ Image, name: `image_tensor`, shape: [1x640x640x3], format: [BxHxWxC],
 ### Converted Model
 
 Image, name: `image_tensor`, shape: [1x3x640x640], format: [BxCxHxW],
-   where:
+where:
 
-    - B - batch size
-    - C - number of channels
-    - H - image height
-    - W - image width
+   - B - batch size
+   - C - number of channels
+   - H - image height
+   - W - image width
 
-   Expected color order: BGR.
+Expected color order: BGR.
 
 ## Output
 
@@ -57,7 +61,7 @@ Image, name: `image_tensor`, shape: [1x3x640x640], format: [BxCxHxW],
 ### Converted Model
 
 The array of summary detection information, name: `DetectionOutput`, shape: [1, 1, N, 7], where N is the number of detected
-bounding boxes.   
+bounding boxes.
 
 For each detection, the description has the format:
 [`image_id`, `label`, `conf`, `x_min`, `y_min`, `x_max`, `y_max`],
