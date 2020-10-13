@@ -1,4 +1,4 @@
-# Overview of OpenVINO&trade; Toolkit Pre-Trained Models
+# Overview of OpenVINO&trade; Toolkit Intel's Pre-Trained Models
 
 OpenVINO&trade; toolkit provides a set of pre-trained models
 that you can use for learning and demo purposes or for developing deep learning
@@ -22,27 +22,38 @@ network to detect objects of the same type better.
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |--------------------- |----------- |------ |-------- |--------- |------ |--------------- |-------- |
 | [faster-rcnn-resnet101-coco-sparse-60-0001](./faster-rcnn-resnet101-coco-sparse-60-0001/description/faster-rcnn-resnet101-coco-sparse-60-0001.md)                                   | 364.21               | 52.79      |       | X       | X        | X     |                |         |
 | [face-detection-adas-0001](./face-detection-adas-0001/description/face-detection-adas-0001.md)                                                                                      | 2.835                | 1.053      | X     |         |          |       |                |         |
-| [face-detection-adas-binary-0001](./face-detection-adas-binary-0001/description/face-detection-adas-binary-0001.md)                                                                 | 0.819                | 1.053      | X     |         |          |       |                |         |
 | [face-detection-retail-0004](./face-detection-retail-0004/description/face-detection-retail-0004.md)                                                                                | 1.067                | 0.588      | X     |         |          |       |                |         |
 | [face-detection-retail-0005](./face-detection-retail-0005/description/face-detection-retail-0005.md)                                                                                | 0.982                | 1.021      | X     |         |          |       |                |         |
-| [face-detection-0100](./face-detection-0100/description/face-detection-0100.md)                                                                                                     | 0.785                | 1.828      | X     |         |          |       |                |         |
-| [face-detection-0102](./face-detection-0102/description/face-detection-0102.md)                                                                                                     | 1.767                | 1.842      | X     |         |          |       |                |         |
-| [face-detection-0104](./face-detection-0104/description/face-detection-0104.md)                                                                                                     | 2.405                | 1.851      | X     |         |          |       |                |         |
-| [face-detection-0105](./face-detection-0105/description/face-detection-0105.md)                                                                                                     | 2.853                | 2.392      | X     |         |          |       |                |         |
-| [face-detection-0106](./face-detection-0106/description/face-detection-0106.md)                                                                                                     | 339.597              | 69.920     | X     |         |          |       |                |         |
+| [face-detection-0200](./face-detection-0200/description/face-detection-0200.md)                                                                                                     | 0.785                | 1.828      | X     |         |          |       |                |         |
+| [face-detection-0202](./face-detection-0202/description/face-detection-0202.md)                                                                                                     | 1.767                | 1.842      | X     |         |          |       |                |         |
+| [face-detection-0204](./face-detection-0204/description/face-detection-0204.md)                                                                                                     | 2.405                | 1.851      | X     |         |          |       |                |         |
+| [face-detection-0205](./face-detection-0205/description/face-detection-0205.md)                                                                                                     | 2.853                | 2.392      | X     |         |          |       |                |         |
+| [face-detection-0206](./face-detection-0206/description/face-detection-0206.md)                                                                                                     | 339.597              | 69.920     | X     |         |          |       |                |         |
 | [person-detection-retail-0002](./person-detection-retail-0002/description/person-detection-retail-0002.md)                                                                          | 12.427               | 3.244      |       | X       |          |       |                |         |
 | [person-detection-retail-0013](./person-detection-retail-0013/description/person-detection-retail-0013.md)                                                                          | 2.300                | 0.723      |       | X       |          |       |                |         |
 | [person-detection-action-recognition-0005](./person-detection-action-recognition-0005/description/person-detection-action-recognition-0005.md)                                      | 7.140                | 1.951      |       | X       |          |       |                |         |
 | [person-detection-action-recognition-0006](./person-detection-action-recognition-0006/description/person-detection-action-recognition-0006.md)                                      | 8.225                | 2.001      |       | X       |          |       |                |         |
 | [person-detection-action-recognition-teacher-0002](./person-detection-action-recognition-teacher-0002/description/person-detection-action-recognition-teacher-0002.md)              | 7.140                | 1.951      |       | X       |          |       |                |         |
 | [person-detection-raisinghand-recognition-0001](./person-detection-raisinghand-recognition-0001/description/person-detection-raisinghand-recognition-0001.md)                       | 7.138                | 1.951      |       | X       |          |       |                |         |
+| [person-detection-0200](./person-detection-0200/description/person-detection-0200.md)                                                                                               | 0.786                | 1.817      |       | X       |          |       |                |         |
+| [person-detection-0201](./person-detection-0201/description/person-detection-0201.md)                                                                                               | 1.768                | 1.817      |       | X       |          |       |                |         |
+| [person-detection-0202](./person-detection-0202/description/person-detection-0202.md)                                                                                               | 3.143                | 1.817      |       | X       |          |       |                |         |
+| [person-detection-0106](./person-detection-0106/description/person-detection-0106.md)                                                                                               | 404.264              | 71.565     |       | X       |          |       |                |         |
 | [pedestrian-detection-adas-0002](./pedestrian-detection-adas-0002/description/pedestrian-detection-adas-0002.md)                                                                    | 2.836                | 1.165      |       | X       |          |       |                |         |
-| [pedestrian-detection-adas-binary-0001](./pedestrian-detection-adas-binary-0001/description/pedestrian-detection-adas-binary-0001.md)                                               | 0.945                | 1.165      |       | X       |          |       |                |         |
 | [pedestrian-and-vehicle-detector-adas-0001](./pedestrian-and-vehicle-detector-adas-0001/description/pedestrian-and-vehicle-detector-adas-0001.md)                                   | 3.974                | 1.650      |       | X       | X        |       |                |         |
 | [vehicle-detection-adas-0002](./vehicle-detection-adas-0002/description/vehicle-detection-adas-0002.md)                                                                             | 2.798                | 1.079      |       |         | X        |       |                |         |
-| [vehicle-detection-adas-binary-0001](./vehicle-detection-adas-binary-0001/description/vehicle-detection-adas-binary-0001.md)                                                        | 0.942                | 1.079      |       |         | X        |       |                |         |
+| [vehicle-detection-0200](./vehicle-detection-0200/description/vehicle-detection-0200.md)                                                                                            | 0.786                | 1.817      |       |         | X        |       |                |         |
+| [vehicle-detection-0201](./vehicle-detection-0201/description/vehicle-detection-0201.md)                                                                                            | 1.768                | 1.817      |       |         | X        |       |                |         |
+| [vehicle-detection-0202](./vehicle-detection-0202/description/vehicle-detection-0202.md)                                                                                            | 3.143                | 1.817      |       |         | X        |       |                |         |
+| [vehicle-detection-0203](./vehicle-detection-0203/description/vehicle-detection-0203.md)                                                                                            | 112.34               | 24.11      |       |         | X        |       |                |         |
+| [vehicle-detection-0204](./vehicle-detection-0204/description/vehicle-detection-0204.md)                                                                                            | 190.32               | 34.15      |       |         | X        |       |                |         |
+| [vehicle-detection-0205](./vehicle-detection-0205/description/vehicle-detection-0205.md)                                                                                            | 212.22                | 36.56      |       |         | X        |       |                |         |
 | [person-vehicle-bike-detection-crossroad-0078](./person-vehicle-bike-detection-crossroad-0078/description/person-vehicle-bike-detection-crossroad-0078.md)                          | 3.964                | 1.178      |       | X       | X        | X     |                |         |
 | [person-vehicle-bike-detection-crossroad-1016](./person-vehicle-bike-detection-crossroad-1016/description/person-vehicle-bike-detection-crossroad-1016.md)                          | 3.560                | 2.887      |       | X       | X        | X     |                |         |
+| [person-vehicle-bike-detection-crossroad-yolov3-1020](./person-vehicle-bike-detection-crossroad-yolov3-1020/description/person-vehicle-bike-detection-crossroad-yolov3-1020.md)     | 65.984               | 61.922     |       | X       | X        | X     |                |         |
+| [person-vehicle-bike-detection-2000](./person-vehicle-bike-detection-2000/description/person-vehicle-bike-detection-2000.md)                                                        | 0.787                | 1.821      |       | X       | X        | X     |                |         |
+| [person-vehicle-bike-detection-2001](./person-vehicle-bike-detection-2001/description/person-vehicle-bike-detection-2001.md)                                                        | 1.770                | 1.821      |       | X       | X        | X     |                |         |
+| [person-vehicle-bike-detection-2002](./person-vehicle-bike-detection-2002/description/person-vehicle-bike-detection-2002.md)                                                        | 3.163                | 1.821      |       | X       | X        | X     |                |         |
 | [vehicle-license-plate-detection-barrier-0106](./vehicle-license-plate-detection-barrier-0106/description/vehicle-license-plate-detection-barrier-0106.md)                          | 0.349                | 0.634      |       |         | X        |       | X              |         |
 | [product-detection-0001](./product-detection-0001/description/product-detection-0001.md)                                                                                            | 3.598                | 3.212      |       |         |          |       |                | X       |
 | [person-detection-asl-0001](./person-detection-asl-0001/description/person-detection-asl-0001.md)                                                                                   | 0.986                | 1.338      |       |      X  |          |       |                |         |
@@ -52,6 +63,7 @@ network to detect objects of the same type better.
 | [yolo-v2-tiny-ava-0001](./yolo-v2-tiny-ava-0001/description/yolo-v2-tiny-ava-0001.md)                                                                                               | 6.975                | 15.12      |       |      X  | X        | X     |                |         |
 | [yolo-v2-tiny-ava-sparse-30-0001](./yolo-v2-tiny-ava-sparse-30-0001/description/yolo-v2-tiny-ava-sparse-30-0001.md)                                                                 | 6.975                | 15.12      |       |      X  | X        | X     |                |         |
 | [yolo-v2-tiny-ava-sparse-60-0001](./yolo-v2-tiny-ava-sparse-60-0001/description/yolo-v2-tiny-ava-sparse-60-0001.md)                                                                 | 6.975                | 15.12      |       |      X  | X        | X     |                |         |
+| [yolo-v2-tiny-vehicle-detection-0001](./yolo-v2-tiny-vehicle-detection-0001/description/yolo-v2-tiny-vehicle-detection-0001.md)                                                     | 5.424                | 11.229     |       |         | X        |       |                |         |
 
 
 ## Object Recognition Models
@@ -66,10 +78,13 @@ Age/Gender recognition after Face Detection).
 | [head-pose-estimation-adas-0001](./head-pose-estimation-adas-0001/description/head-pose-estimation-adas-0001.md)                                            | 0.105                | 1.911      |
 | [license-plate-recognition-barrier-0001](./license-plate-recognition-barrier-0001/description/license-plate-recognition-barrier-0001.md)                    | 0.328                | 1.218      |
 | [vehicle-attributes-recognition-barrier-0039](./vehicle-attributes-recognition-barrier-0039/description/vehicle-attributes-recognition-barrier-0039.md)     | 0.126                | 0.626      |
+| [vehicle-attributes-recognition-barrier-0042](./vehicle-attributes-recognition-barrier-0042/description/vehicle-attributes-recognition-barrier-0042.md)     | 0.462                | 11.177     |
 | [emotions-recognition-retail-0003](./emotions-recognition-retail-0003/description/emotions-recognition-retail-0003.md)                                      | 0.126                | 2.483      |
 | [landmarks-regression-retail-0009](./landmarks-regression-retail-0009/description/landmarks-regression-retail-0009.md)                                      | 0.021                | 0.191      |
 | [facial-landmarks-35-adas-0002](./facial-landmarks-35-adas-0002/description/facial-landmarks-35-adas-0002.md)                                               | 0.042                | 4.595      |
 | [person-attributes-recognition-crossroad-0230](./person-attributes-recognition-crossroad-0230/description/person-attributes-recognition-crossroad-0230.md)  | 0.174                | 0.735      |
+| [person-attributes-recognition-crossroad-0234](./person-attributes-recognition-crossroad-0234/description/person-attributes-recognition-crossroad-0234.md)  | 2.167                | 23.510     |
+| [person-attributes-recognition-crossroad-0238](./person-attributes-recognition-crossroad-0238/description/person-attributes-recognition-crossroad-0238.md)  | 1.034                | 21.797     |
 | [gaze-estimation-adas-0002](./gaze-estimation-adas-0002/description/gaze-estimation-adas-0002.md)                                                           | 0.139                | 1.882      |
 
 ## Reidentification Models
@@ -92,15 +107,10 @@ and accuracy (expect a bigger model to perform better).
 
 | Model Name                                                                                                                        | Complexity (GFLOPs)  | Size (Mp)  | Rank-1 on Market-1501 |
 |-----------------------------------------------------------------------------------------------------------------------------------|--------------------- |----------- |------------------ |
-| [person-reidentification-retail-0031](./person-reidentification-retail-0031/description/person-reidentification-retail-0031.md)   | 0.028                | 0.280      | 92.11%            |
-| [person-reidentification-retail-0248](./person-reidentification-retail-0248/description/person-reidentification-retail-0248.md)   | 0.174                | 0.183      | 84.3%             |
-| [person-reidentification-retail-0249](./person-reidentification-retail-0249/description/person-reidentification-retail-0249.md)   | 0.564                | 0.597      | 92.9%             |
-| [person-reidentification-retail-0300](./person-reidentification-retail-0300/description/person-reidentification-retail-0300.md)   | 3.521                | 5.289      | 96.3%             |
-
-| Model Name                                                                                                                        | Complexity (GFLOPs)  | Size (Mp)  | Pairwise accuracy on LFW |
-|-----------------------------------------------------------------------------------------------------------------------------------|--------------------- |----------- |------------------ |
-| [face-reidentification-retail-0095](./face-reidentification-retail-0095/description/face-reidentification-retail-0095.md)         | 0.588                | 1.107      | 99.33%            |
-
+| [person-reidentification-retail-0288](./person-reidentification-retail-0288/description/person-reidentification-retail-0288.md)   | 0.174                | 0.183      | 86.1%             |
+| [person-reidentification-retail-0287](./person-reidentification-retail-0287/description/person-reidentification-retail-0287.md)   | 0.564                | 0.595      | 92.9%             |
+| [person-reidentification-retail-0286](./person-reidentification-retail-0286/description/person-reidentification-retail-0286.md)   | 1.170                | 1.234      | 94.8%             |
+| [person-reidentification-retail-0277](./person-reidentification-retail-0277/description/person-reidentification-retail-0277.md)   | 1.993                | 2.103      | 96.2%             |
 
 ## Semantic Segmentation Models
 
@@ -139,7 +149,7 @@ instance instance segmentation model outputs pixel-wise masks for all instances.
 Human pose estimation task is to predict a pose: body skeleton, which consists
 of keypoints and connections between them, for every person in an input image or
 video.  Keypoints are body joints, i.e. ears, eyes, nose, shoulders, knees, etc.
-There are two major groups of such metods: top-down and bottom-up.  The first
+There are two major groups of such methods: top-down and bottom-up.  The first
 detects persons in a given frame, crops or rescales detections, then runs pose
 estimation network for every detection. These methods are very accurate. The
 second finds all keypoints in a given frame, then groups them by person
@@ -168,6 +178,7 @@ Deep Learning models for text detection in various applications.
 |------------------------------------------------------------------------------------------------------------------------------------------------|--------------------- |----------- |
 | [text-detection-0003](./text-detection-0003/description/text-detection-0003.md)                                                                | 51.256               | 6.747      |
 | [text-detection-0004](./text-detection-0004/description/text-detection-0004.md)                                                                | 23.305               | 4.328      |
+| [horizontal-text-detection-0001](./horizontal-text-detection-0001/description/horizontal-text-detection-0001.md)                               | 7.718              | 2.259     |
 
 ## Text Recognition
 
@@ -178,6 +189,7 @@ Deep Learning models for text recognition in various applications.
 | [text-recognition-0012](./text-recognition-0012/description/text-recognition-0012.md)                                                          | 1.485                | 5.568      |
 | [handwritten-score-recognition-0003](./handwritten-score-recognition-0003/description/handwritten-score-recognition-0003.md)                   | 0.792                | 5.555      |
 | [handwritten-japanese-recognition-0001](./handwritten-japanese-recognition-0001/description/handwritten-japanese-recognition-0001.md)          | 117.136              | 15.31      |
+| [formula-recognition-medium-scan-0001](./formula-recognition-medium-scan-0001/description/formula-recognition-medium-scan-0001.md): <br> encoder <br> decoder | <br>16.56<br>1.86 | <br>1.69<br>2.56 |
 
 ## Text Spotting
 
@@ -185,9 +197,10 @@ Deep Learning models for text spotting (simultaneous detection and recognition).
 
 | Model Name                                                                                                                                     | Complexity (GFLOPs)  | Size (Mp)  |
 |------------------------------------------------------------------------------------------------------------------------------------------------|--------------------- |----------- |
-| [text-spotting-0002-detector](./text-spotting-0002-detector/description/text-spotting-0002-detector.md)                                        | 185.169             | 26.497    |
-| [text-spotting-0002-recognizer-encoder](./text-spotting-0002-recognizer-encoder/description/text-spotting-0002-recognizer-encoder.md)          | 2.082                | 1.328      |
-| [text-spotting-0002-recognizer-decoder](./text-spotting-0002-recognizer-decoder/description/text-spotting-0002-recognizer-decoder.md)          | 0.002                | 0.273      |
+| [text-spotting-0002](./text-spotting-0002/description/text-spotting-0002.md)                                                                   |                      |            |
+| text-spotting-0002-detector                                                                                                                    | 185.169              | 26.497     |
+| text-spotting-0002-recognizer-encoder                                                                                                          | 2.082                | 1.328      |
+| text-spotting-0002-recognizer-decoder                                                                                                          | 0.002                | 0.273      |
 
 ## Action Recognition Models
 
@@ -199,11 +212,14 @@ that predict an actual labels are called *decoder*.
 
 | Model Name                                                                                                                                              | Complexity (GFLOPs)  | Size (Mp)  |
 |---------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------- |----------- |
-| [driver-action-recognition-adas-0002-encoder](./driver-action-recognition-adas-0002-encoder/description/driver-action-recognition-adas-0002-encoder.md) | 0.676                | 2.863      |
-| [driver-action-recognition-adas-0002-decoder](./driver-action-recognition-adas-0002-decoder/description/driver-action-recognition-adas-0002-decoder.md) | 0.147                | 4.205      |
-| [action-recognition-0001-encoder](./action-recognition-0001-encoder/description/action-recognition-0001-encoder.md)                                     | 7.340                | 21.276     |
-| [action-recognition-0001-decoder](./action-recognition-0001-decoder/description/action-recognition-0001-decoder.md)                                     | 0.147                | 4.405      |
+| [driver-action-recognition-adas-0002](./driver-action-recognition-adas-0002/description/driver-action-recognition-adas-0002.md)                         |                      |            |
+| driver-action-recognition-adas-0002-encoder                                                                                                             | 0.676                | 2.863      |
+| driver-action-recognition-adas-0002-decoder                                                                                                             | 0.147                | 4.205      |
+| [action-recognition-0001](./action-recognition-0001/description/action-recognition-0001.md)                                                             |                      |            |
+|   action-recognition-0001-encoder                                                                                                                       | 7.340                | 21.276     |
+|   action-recognition-0001-decoder                                                                                                                       | 0.147                | 4.405      |
 | [asl-recognition-0004](./asl-recognition-0004/description/asl-recognition-0004.md)                                                                      | 6.660                | 4.133      |
+| [weld-porosity-detection-0001](./weld-porosity-detection-0001/description/weld-porosity-detection-0001.md)                                                                      | 3.636                | 11.173      |
 
 ## Image Retrieval
 
@@ -221,6 +237,24 @@ Deep Learning compressed models
 |------------------------------------------------------------------------------------------------------------------------------------------------|--------------------- |----------- |
 | [resnet50-binary-0001](./resnet50-binary-0001/description/resnet50-binary-0001.md)                                                             | 1.002                | 7.446      |
 | [resnet18-xnor-binary-onnx-0001](./resnet18-xnor-binary-onnx-0001/description/resnet18-xnor-binary-onnx-0001.md)                               | -                    | -          |
+
+## Question Answering
+
+| Model Name| Complexity (GFLOPs)|Size (Mp)|
+|-----------|--------------------|---------|
+| [bert-large-uncased-whole-word-masking-squad-fp32-0001](./bert-large-uncased-whole-word-masking-squad-fp32-0001/description/bert-large-uncased-whole-word-masking-squad-fp32-0001.md) | 246.93 | 333.96 |
+| [bert-large-uncased-whole-word-masking-squad-int8-0001](./bert-large-uncased-whole-word-masking-squad-int8-0001/description/bert-large-uncased-whole-word-masking-squad-int8-0001.md) | 246.93 | 333.96 |
+| [bert-small-uncased-whole-word-masking-squad-0001](./bert-small-uncased-whole-word-masking-squad-0001/description/bert-small-uncased-whole-word-masking-squad-0001.md) | 23.9 | 57.94 |
+| [bert-small-uncased-whole-word-masking-squad-0002](./bert-small-uncased-whole-word-masking-squad-0002/description/bert-small-uncased-whole-word-masking-squad-0002.md) | 23.9 | 41.1 |
+| [bert-large-uncased-whole-word-masking-squad-emb-0001](./bert-large-uncased-whole-word-masking-squad-emb-0001/description/bert-large-uncased-whole-word-masking-squad-emb-0001.md) | 246.93 (for [1,384] input size) | 333.96 |
+
+## Machine Translation
+
+| Model Name| Complexity (GFLOPs)|Size (Mp)|
+|-----------|--------------------|---------|
+| [machine-translation-nar-en-ru-0001](./machine-translation-nar-en-ru-0001/description/machine-translation-nar-en-ru-0001.md) | 23.17 | 69.29 |
+| [machine-translation-nar-ru-en-0001](./machine-translation-nar-ru-en-0001/description/machine-translation-nar-ru-en-0001.md) | 23.17 | 69.29 |
+
 
 ## Legal Information
 [*] Other names and brands may be claimed as the property of others.

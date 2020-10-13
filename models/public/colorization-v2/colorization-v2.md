@@ -26,7 +26,7 @@ The accuracy metrics calculated on ImageNet
 validation dataset using [VGG16](https://arxiv.org/abs/1409.1556) caffe
 model and colorization as preprocessing.
 
-For preprocessing `rgb -> gray -> coloriaztion` recieved values:
+For preprocessing `rgb -> gray -> colorization` received values:
 
 | Metric         | Value with preprocessing   | Value without preprocessing |
 |----------------|-----------------------------|-----------------------------|
@@ -84,7 +84,7 @@ Image, name - `class8_313_rh`\*,  shape - `1,313,56,56`, format is `B,C,H,W` whe
 in order for network to work,
 you need to reproduce `class8_ab` layer with the coefficients that
 downloaded separately with the model. More detailed information can be found
->[this](https://github.com/richzhang/colorization/blob/master/demo/colorization_demo_v2.ipynb).
+>[this](https://github.com/richzhang/colorization/blob/caffe/demo/colorization_demo_v2.ipynb).
 
 ## Legal Information
 The original model is distributed under the following

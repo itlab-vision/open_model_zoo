@@ -27,8 +27,8 @@ The model output for `efficientnet-b0-pytorch` is the typical object classifier 
 
 | Metric | Original model | Converted model |
 | ------ | -------------- | --------------- |
-| Top 1  | 76.91          | 76.91           |
-| Top 5  | 93.21          | 93.21           | 
+| Top 1  | 76.91%          | 76.91%           |
+| Top 5  | 93.21%          | 93.21%           |
 
 ## Performance
 
@@ -64,14 +64,14 @@ Channel order is `BGR`.
 Object classifier according to ImageNet classes, name - `prob`,  shape - `1,1000`, output data format is `B,C` where:
 
 - `B` - batch size
-- `C` - predicted probabilities for each class in the [0, 1] range
+- `C` - predicted probabilities for each class in the logits format
 
 ### Converted Model
 
 Object classifier according to ImageNet classes, name - `prob`,  shape - `1,1000`, output data format is `B,C` where:
 
 - `B` - batch size
-- `C` - predicted probabilities for each class in the [0, 1] range
+- `C` - predicted probabilities for each class in the logits format
 
 ## Legal Information
 

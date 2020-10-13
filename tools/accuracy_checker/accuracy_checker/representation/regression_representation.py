@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from pathlib import Path
 import numpy as np
 from .base_representation import BaseRepresentation
 
@@ -73,3 +74,50 @@ class FacialLandmarksAnnotation(FacialLandmarksRepresentation):
 
 class FacialLandmarksPrediction(FacialLandmarksRepresentation):
     pass
+
+
+class FacialLandmarks3DRepresentation(BaseRepresentation):
+    def __init__(self, identifier='', x_values=None, y_values=None, z_values=None):
+        super().__init__(identifier)
+        self.x_values = x_values if x_values is not None else []
+        self.y_values = y_values if y_values is not None else []
+        self.z_values = z_values if z_values is not None else []
+
+
+class FacialLandmarks3DAnnotation(FacialLandmarks3DRepresentation, FacialLandmarksAnnotation):
+    def __init__(self, identifier='', x_values=None, y_values=None, z_values=None, face_mask=None):
+        super().__init__(identifier, x_values, y_values, z_values)
+        self.face_mask = face_mask
+
+    def normalization_coef(self, is_2d=False):
+        if self.face_mask is None:
+            min_x, max_x = np.min(self.x_values), np.max(self.x_values)
+            min_y, max_y = np.min(self.y_values), np.max(self.y_values)
+            min_z, max_z = np.min(self.z_values), np.max(self.z_values)
+        else:
+            face_vertices_x = self.x_values[self.face_mask > 0]
+            face_vertices_y = self.y_values[self.face_mask > 0]
+            face_vertices_z = self.x_values[self.face_mask > 0]
+            min_x, max_x = np.min(face_vertices_x), np.max(face_vertices_x)
+            min_y, max_y = np.min(face_vertices_y), np.max(face_vertices_y)
+            min_z, max_z = np.min(face_vertices_z), np.max(face_vertices_z)
+        if is_2d:
+            return np.sqrt((max_x - min_x) ** 2 + (max_y - min_y) ** 2)
+        return np.sqrt((max_x - min_x) ** 2 + (max_y - min_y) ** 2 + (max_z - min_z) ** 2)
+
+
+class FacialLandmarks3DPrediction(FacialLandmarks3DRepresentation):
+    pass
+
+
+class FeaturesRegressionAnnotation(BaseRepresentation):
+    def __init__(self, identifier, value_file):
+        super().__init__(identifier)
+        self.value_file = value_file
+
+    @property
+    def value(self):
+        data_source = self.metadata.get('additional_data_source')
+        if data_source is None:
+            data_source = self.metadata['data_source']
+        return np.loadtxt(str(Path(data_source) / self.value_file))

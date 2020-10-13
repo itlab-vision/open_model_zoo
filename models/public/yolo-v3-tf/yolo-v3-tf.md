@@ -7,13 +7,13 @@ YOLO v3 is a real-time object detection model implemented with Keras\* from this
 ## Conversion
 
 1. Download or clone the official [repository](https://github.com/david8862/keras-YOLOv3-model-set) (tested on `ffede5` commit).
-2. Use the folllowing commands to get original model (named `yolov3` in repository) and convert it to Keras\* format (see details in the [README.md](https://github.com/david8862/keras-YOLOv3-model-set/blob/ffede5d316568479610b75a3424e2a7b81f0209b/README.md)  file in the official repository):
+2. Use the following commands to get original model (named `yolov3` in repository) and convert it to Keras\* format (see details in the [README.md](https://github.com/david8862/keras-YOLOv3-model-set/blob/ffede5d316568479610b75a3424e2a7b81f0209b/README.md)  file in the official repository):
 
    1. Download YOLO v3 weights:
         ```
         wget -O weights/yolov3.weights https://pjreddie.com/media/files/yolov3.weights
         ```
-   
+
    1. Convert model weights to Keras\*:
         ```
         python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
@@ -53,8 +53,8 @@ Accuracy metrics obtained on COCO\* validation dataset for converted model.
 
 | Metric | Value |
 | ------ | ------|
-| mAP    | 62.27 |
-| [COCO\* mAP](http://cocodataset.org/#detection-eval) | 67.7 |
+| mAP    | 62.27% |
+| [COCO\* mAP](http://cocodataset.org/#detection-eval) | 67.7% |
 
 ## Input
 

@@ -48,7 +48,7 @@ In order to evaluate some models required frameworks have to be installed. Accur
 - [MXNet](https://mxnet.apache.org/).
 - [OpenCV DNN](https://docs.opencv.org/4.1.0/d2/de6/tutorial_py_setup_in_ubuntu.html).
 - [TensorFlow](https://www.tensorflow.org/).
-- [ONNX Runtime](https://github.com/microsoft/onnxruntime/blob/master/README.md).
+- <a href="https://github.com/microsoft/onnxruntime/blob/master/README.md">ONNX Runtime</a>.
 - [PyTorch](https://pytorch.org/)
 
 You can use any of them or several at a time. For correct work, Accuracy Checker requires at least one. You are able postpone installation of other frameworks and install them when they will be necessary.
@@ -68,9 +68,34 @@ You can install only core part of the tool without additional dependencies and m
 python setup.py install_core
 ```
 
+#### Troubleshooting during installation
+
+When previous version of the tool already installed in the environment, in some cases, it can broke new installation.
+If you see the error about directory/file not found, please try remove manually old tool version from your environment or install the tool with following command (in accuracy checker directory, instead of setup.py install):
+```bash
+pip install --upgrade --force-reinstall .
+```
+
+#### Running the tool inside IDE for development purposes
+
+Accuracy Checker tool has entry point for running in CLI, however majority of popular code editors or IDE expects scripts as starting point of application.
+Sometimes it can be useful to have opportunity to run the tool as script for debugging or enabling new models.
+For usage Accuracy Checker inside the IDE, you need to create a script in accuracy_checker root directory (e.g. `<open_model_zoo>/tools/accuracy_checker/main.py`)
+with following code:
+```python
+from accuracy_checker.main import main
+
+if __name__ == '__main__':
+    main()
+
+```
+Now, you can use this script for running in IDE.
+
 #### Usage
 
 You may test your installation and get familiar with accuracy checker by running [sample](sample/README.md).
+
+Each Open Model Zoo model can be evaluated using a configuration file. Please refer to [How to use predefined configuration files](configs/README.md) guide.
 
 Once you installed accuracy checker you can evaluate your configurations with:
 
@@ -78,15 +103,12 @@ Once you installed accuracy checker you can evaluate your configurations with:
 accuracy_check -c path/to/configuration_file -m /path/to/models -s /path/to/source/data -a /path/to/annotation
 ```
 
-All relative paths in config files will be prefixed with values specified in command line:
+You may refer to `-h, --help` to full list of command line options. Some arguments are:
 
 - `-c, --config` path to configuration file.
 - `-m, --models` specifies directory in which models and weights declared in config file will be searched. You also can specify space separated list of directories if you want to run the same configuration several times with models located in different directories or if you have the pipeline with several models.
 - `-s, --source` specifies directory in which input images will be searched.
 - `-a, --annotations` specifies directory in which annotation and meta files will be searched.
-
-You may refer to `-h, --help` to full list of command line options. Some optional arguments are:
-
 - `-d, --definitions` path to the global configuration file.
 - `-e, --extensions` directory with InferenceEngine extensions.
 - `-b, --bitstreams` directory with bitstream (for Inference Engine with fpga plugin).
@@ -97,8 +119,12 @@ You may refer to `-h, --help` to full list of command line options. Some optiona
 - `--num_requests` number requests for async execution. Allows override provided in config info. Default is `AUTO`
 - `--model_attributes` directory with additional models attributes.
 - `--subsample_size` dataset subsample size.
+- `--shuffle` allows shuffle annotation during creation a subset if subsample_size argument is provided. Default is `True`.
+- `--intermediate_metrics_results` enables intermediate metrics results printing. Default is `False`
+- `--metrics_interval` number of iteration for updated metrics result printing if `--intermediate_metrics_results` flag enabled. Default is 1000.
 
 You are also able to replace some command line arguments with environment variables for path prefixing. Supported following list of variables:
+* `DEFINITIONS_FILE` - equivalent of `-d`, `-definitions`.
 * `DATA_DIR` -  equivalent of `-s`, `--source`.
 * `MODELS_DIR` - equivalent of `-m`, `--models`.
 * `EXTENSIONS` - equivalent of `-e`, `--extensions`.
@@ -122,15 +148,15 @@ models:
 - name: model_name
   launchers:
     - framework: caffe
-      model:   public/alexnet/caffe/bvlc_alexnet.prototxt
-      weights: public/alexnet/caffe/bvlc_alexnet.caffemodel
+      model:   bvlc_alexnet.prototxt
+      weights: bvlc_alexnet.caffemodel
       adapter: classification
       batch: 128
   datasets:
     - name: dataset_name
 ```
 Optionally you can use global configuration. It can be useful for avoiding duplication if you have several models which should be run on the same dataset.
-Example of global definitions file can be found [here](dataset_definitions.yml). Global definitions will be merged with evaluation config in the runtime by dataset name.
+Example of global definitions file can be found <a href="https://github.com/opencv/open_model_zoo/blob/master/tools/accuracy_checker/dataset_definitions.yml">here</a>. Global definitions will be merged with evaluation config in the runtime by dataset name.
 Parameters of global configuration can be overwritten by local config (e.g. if in definitions specified resize with destination size 224 and in the local config used resize with size 227, the value in config - 227 will be used as resize parameter)
 You can use field `global_definitions` for specifying path to global definitions directly in the model config or via command line arguments (`-d`, `--definitions`).
 
@@ -140,14 +166,14 @@ Launcher is a description of how your model should be executed.
 Each launcher configuration starts with setting `framework` name. Currently *caffe*, *dlsdk*, *mxnet*, *tf*, *tf_lite*, *opencv*, *onnx_runtime* supported. Launcher description can have differences.
 Please view:
 
-- [how to configure Caffe launcher](accuracy_checker/launcher/caffe_launcher_readme.md).
-- [how to configure DLSDK launcher](accuracy_checker/launcher/dlsdk_launcher_readme.md).
-- [how to configure OpenCV launcher](accuracy_checker/launcher/opencv_launcher_readme.md).
-- [how to configure MXNet Launcher](accuracy_checker/launcher/mxnet_launcher_readme.md).
-- [how to configure TensorFlow Launcher](accuracy_checker/launcher/tf_launcher_readme.md).
-- [how to configure TensorFlow Lite Launcher](accuracy_checker/launcher/tf_lite_launcher_readme.md).
-- [how to configure ONNX Runtime Launcher](accuracy_checker/launcher/onnx_runtime_launcher_readme.md).
-- [how to configure PyTorch Launcher](accuracy_checker/launcher/pytorch_launcher_readme.md)
+- [How to configure Caffe launcher](accuracy_checker/launcher/caffe_launcher_readme.md)
+- [How to configure DLSDK launcher](accuracy_checker/launcher/dlsdk_launcher_readme.md)
+- [How to configure OpenCV launcher](accuracy_checker/launcher/opencv_launcher_readme.md)
+- [How to configure MXNet Launcher](accuracy_checker/launcher/mxnet_launcher_readme.md)
+- [How to configure TensorFlow Launcher](accuracy_checker/launcher/tf_launcher_readme.md)
+- [How to configure TensorFlow Lite Launcher](accuracy_checker/launcher/tf_lite_launcher_readme.md)
+- [How to configure ONNX Runtime Launcher](accuracy_checker/launcher/onnx_runtime_launcher_readme.md)
+- [How to configure PyTorch Launcher](accuracy_checker/launcher/pytorch_launcher_readme.md)
 
 ### Datasets
 
@@ -155,9 +181,11 @@ Dataset entry describes data on which model should be evaluated,
 all required preprocessing and postprocessing/filtering steps,
 and metrics that will be used for evaluation.
 
-If your dataset data is a well-known competition problem (COCO, Pascal VOC, ...) and/or can be potentially reused for other models
+If your dataset data is a well-known competition problem (COCO, Pascal VOC, and others) and/or can be potentially reused for other models
 it is reasonable to declare it in some global configuration file (*definition* file). This way in your local configuration file you can provide only
 `name` and all required steps will be picked from global one. To pass path to this global configuration use `--definition` argument of CLI.
+
+If you want to evaluate models using prepared config files and well-known datasets, you need to organize folders with validation datasets in a certain way. More detailed information about dataset preparation you can find in <a href="https://github.com/opencv/open_model_zoo/blob/develop/datasets.md">Dataset Preparation Guide</a>.
 
 Each dataset must have:
 
@@ -169,9 +197,10 @@ And optionally:
 - `preprocessing`: list of preprocessing steps applied to input data. If you want calculated metrics to match reported, you must reproduce preprocessing from canonical paper of your topology or ask topology author about required steps.
 - `postprocessing`: list of postprocessing steps.
 - `reader`: approach for data reading. Default reader is `opencv_imread`.
+- `segmentation_masks_source` - path to directory where gt masks for semantic segmentation task stored.
 
 Also it must contain data related to annotation.
-You can convert annotation inplace using:
+You can convert annotation in-place using:
 - `annotation_conversion`: parameters for annotation conversion
 
 
@@ -212,8 +241,8 @@ will be picked from *definitions* file.
 You can find useful following instructions:
 
 - [how to convert annotations](accuracy_checker/annotation_converters/README.md)
-- [how to use preprocessings](accuracy_checker/preprocessor/README.md).
-- [how to use postprocessings](accuracy_checker/postprocessor/README.md).
+- [how to use preprocessing](accuracy_checker/preprocessor/README.md).
+- [how to use postprocessing](accuracy_checker/postprocessor/README.md).
 - [how to use metrics](accuracy_checker/metrics/README.md).
 - [how to use readers](accuracy_checker/data_readers/README.md).
 
@@ -245,4 +274,4 @@ Typical workflow for testing new model include:
 
 Standard Accuracy Checker validation pipeline: Annotation Reading -> Data Reading -> Preprocessing -> Inference -> Postprocessing -> Metrics.
 In some cases it can be unsuitable (e.g. if you have sequence of models). You are able to customize validation pipeline using own evaluator.
-More details about custom evaluations can be found in [related section](custom_evaluators/README.md).
+More details about custom evaluations can be found in the [related section](accuracy_checker/evaluators/custom_evaluators/README.md).

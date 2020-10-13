@@ -95,10 +95,10 @@ NATIVE_DEMOS = [
         single_option_cases('-m_pa', None, ModelArg('person-attributes-recognition-crossroad-0230')),
         single_option_cases('-m_reid',
             None,
-            ModelArg('person-reidentification-retail-0031'),
-            ModelArg('person-reidentification-retail-0248'),
-            ModelArg('person-reidentification-retail-0249'),
-            ModelArg('person-reidentification-retail-0300')),
+            ModelArg('person-reidentification-retail-0277'),
+            ModelArg('person-reidentification-retail-0286'),
+            ModelArg('person-reidentification-retail-0287'),
+            ModelArg('person-reidentification-retail-0288')),
     )),
 
     NativeDemo(subdirectory='gaze_estimation_demo',
@@ -112,6 +112,7 @@ NATIVE_DEMOS = [
             '-m_fd': ModelArg('face-detection-adas-0001'),
             '-m_hp': ModelArg('head-pose-estimation-adas-0001'),
             '-m_lm': ModelArg('facial-landmarks-35-adas-0002'),
+            '-m_es': ModelArg('open-closed-eye-0001'),
         }),
     )),
 
@@ -129,7 +130,7 @@ NATIVE_DEMOS = [
             '-no_show': None,
             '-time': '5',
             '-i': DataDirectoryOrigFileNamesArg('classification'),
-            '-labels': DemoFileArg('synset_words.txt'),
+            '-labels': DemoFileArg('imagenet_2012_classes.txt'),
             '-gt': TestDataArg("ILSVRC2012_img_val/ILSVRC2012_val.txt"),
             '-b': '8'}),
         single_option_cases('-m',
@@ -137,7 +138,7 @@ NATIVE_DEMOS = [
             ModelArg('densenet-121-tf'),
             ModelArg('densenet-169'),
             ModelArg('mobilenet-v2-pytorch'),
-            ModelArg('resnet-50')),
+            ModelArg('resnet-50-caffe2')),
     )),
 
     NativeDemo(subdirectory='interactive_face_detection_demo',
@@ -145,7 +146,7 @@ NATIVE_DEMOS = [
             test_cases=combine_cases(
         TestCase(options={'-no_show': None,
             **MONITORS,
-            '-i': DataPatternArg('face-detection-adas')}),
+            '-i': DataPatternArg('375x500')}),
         TestCase(options={'-m': ModelArg('face-detection-adas-0001')}),
         [
             TestCase(options={}),
@@ -179,7 +180,6 @@ NATIVE_DEMOS = [
             '-i': DATA_SEQUENCES['face-detection-adas']}),
         single_option_cases('-m',
             ModelArg('face-detection-adas-0001'),
-            ModelArg('face-detection-adas-binary-0001', "FP32-INT1"),
             ModelArg('face-detection-retail-0004'),
             ModelArg('face-detection-retail-0005'),
             ModelArg('face-detection-retail-0044')),
@@ -211,7 +211,12 @@ NATIVE_DEMOS = [
         ],
     )),
 
-    # TODO: object_detection_demo_yolov3_async: no models.lst
+    NativeDemo(subdirectory='object_detection_demo_yolov3_async', device_keys=['-d'], test_cases=combine_cases(
+        TestCase(options={'--no_show': None,
+            **MONITORS,
+            '-i': DataPatternArg('object-detection-demo-ssd-async')}),
+        TestCase(options={'-m': ModelArg('yolo-v3-tf')})
+    )),
 
     NativeDemo('pedestrian_tracker_demo', device_keys=['-d_det', '-d_reid'], test_cases=combine_cases(
         TestCase(options={'-no_show': None,
@@ -222,10 +227,10 @@ NATIVE_DEMOS = [
             TestCase(options={'-m_det': ModelArg('person-detection-retail-0013')}),
         ],
         single_option_cases('-m_reid',
-            ModelArg('person-reidentification-retail-0031'),
-            ModelArg('person-reidentification-retail-0248'),
-            ModelArg('person-reidentification-retail-0249'),
-            ModelArg('person-reidentification-retail-0300')),
+            ModelArg('person-reidentification-retail-0277'),
+            ModelArg('person-reidentification-retail-0286'),
+            ModelArg('person-reidentification-retail-0287'),
+            ModelArg('person-reidentification-retail-0288')),
     )),
 
     NativeDemo(subdirectory='security_barrier_camera_demo',
@@ -279,7 +284,7 @@ NATIVE_DEMOS = [
                     TestCase(options={}),
                     TestCase(options={
                         '-m_lm': ModelArg('landmarks-regression-retail-0009'),
-                        '-m_reid': ModelArg('face-reidentification-retail-0095'),
+                        '-m_reid': ModelArg('face-recognition-mobilefacenet-arcface'),
                     }),
                 ],
             ),
@@ -295,7 +300,7 @@ NATIVE_DEMOS = [
     )),
 
     NativeDemo(subdirectory='text_detection_demo', device_keys=['-d_td', '-d_tr'], test_cases=combine_cases(
-        TestCase(options={'-no_show': None, '-dt': 'video',
+        TestCase(options={'-no_show': None,
             **MONITORS,
             '-i': DataPatternArg('text-detection')}),
         single_option_cases('-m_td', ModelArg('text-detection-0003'), ModelArg('text-detection-0004')),
@@ -322,23 +327,6 @@ PYTHON_DEMOS = [
                 '-m_de': ModelArg('driver-action-recognition-adas-0002-decoder'),
             }),
         ],
-    )),
-
-    PythonDemo(subdirectory='face_recognition_demo', device_keys=['-d_fd', '-d_lm', '-d_reid'],
-               test_cases=combine_cases(
-        TestCase(options={'--no_show': None,
-                          **MONITORS,
-                          '-i': DataPatternArg('face-detection-adas'),
-                          '-fg': DataDirectoryArg('face-recognition-gallery')
-                          }),
-        single_option_cases('-m_fd',
-            ModelArg('face-detection-adas-0001'),
-            ModelArg('face-detection-adas-binary-0001', "FP32-INT1"),
-            ModelArg('face-detection-retail-0004'),
-            ModelArg('face-detection-retail-0005'),
-            ModelArg('face-detection-retail-0044')),
-        TestCase(options={'-m_lm': ModelArg('landmarks-regression-retail-0009')}),
-        TestCase(options={'-m_reid': ModelArg('face-reidentification-retail-0095')}),
     )),
 
     PythonDemo(subdirectory='human_pose_estimation_3d_demo', device_keys=['-d'], test_cases=combine_cases(
@@ -370,17 +358,17 @@ PYTHON_DEMOS = [
             ModelArg('instance-segmentation-security-1025')),
     )),
 
-    PythonDemo(subdirectory='multi_camera_multi_person_tracking', device_keys=['-d'], test_cases=combine_cases(
+    PythonDemo(subdirectory='multi_camera_multi_target_tracking', device_keys=['-d'], test_cases=combine_cases(
         TestCase(options={'--no_show': None,
             **MONITORS,
-            '-i': [DataPatternArg('multi-camera-multi-person-tracking'),
-                DataPatternArg('multi-camera-multi-person-tracking/repeated')],
+            '-i': [DataPatternArg('multi-camera-multi-target-tracking'),
+                DataPatternArg('multi-camera-multi-target-tracking/repeated')],
             '-m': ModelArg('person-detection-retail-0013')}),
         single_option_cases('--m_reid',
-            ModelArg('person-reidentification-retail-0031'),
-            ModelArg('person-reidentification-retail-0248'),
-            ModelArg('person-reidentification-retail-0249'),
-            ModelArg('person-reidentification-retail-0300')),
+            ModelArg('person-reidentification-retail-0277'),
+            ModelArg('person-reidentification-retail-0286'),
+            ModelArg('person-reidentification-retail-0287'),
+            ModelArg('person-reidentification-retail-0288')),
     )),
 
     PythonDemo(subdirectory='object_detection_demo_ssd_async', device_keys=['-d'], test_cases=combine_cases(
@@ -389,16 +377,13 @@ PYTHON_DEMOS = [
             '-i': DataPatternArg('object-detection-demo-ssd-async')}),
         single_option_cases('-m',
             ModelArg('face-detection-adas-0001'),
-            ModelArg('face-detection-adas-binary-0001', "FP32-INT1"),
             ModelArg('face-detection-retail-0004'),
             ModelArg('face-detection-retail-0005'),
             ModelArg('face-detection-retail-0044'),
             ModelArg('pedestrian-and-vehicle-detector-adas-0001'),
             ModelArg('pedestrian-detection-adas-0002'),
-            ModelArg('pedestrian-detection-adas-binary-0001', "FP32-INT1"),
             ModelArg('person-detection-retail-0013'),
             ModelArg('vehicle-detection-adas-0002'),
-            ModelArg('vehicle-detection-adas-binary-0001', "FP32-INT1"),
             ModelArg('vehicle-license-plate-detection-barrier-0106'),
             ModelArg('ssd-resnet34-1200-onnx')),
     )),

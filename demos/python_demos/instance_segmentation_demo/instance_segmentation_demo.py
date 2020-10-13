@@ -133,24 +133,14 @@ def main():
     log.info('Loading network')
     net = ie.read_network(args.model, os.path.splitext(args.model)[0] + '.bin')
 
-    if 'CPU' in args.device:
-        supported_layers = ie.query_network(net, 'CPU')
-        not_supported_layers = [l for l in net.layers.keys() if l not in supported_layers]
-        if len(not_supported_layers) != 0:
-            log.error('Following layers are not supported by the plugin for specified device {}:\n {}'.
-                      format(args.device, ', '.join(not_supported_layers)))
-            log.error("Please try to specify cpu extensions library path in sample's command line parameters using -l "
-                      "or --cpu_extension command line argument")
-            sys.exit(1)
-
     required_input_keys = {'im_data', 'im_info'}
-    assert required_input_keys == set(net.inputs.keys()), \
+    assert required_input_keys == set(net.input_info), \
         'Demo supports only topologies with the following input keys: {}'.format(', '.join(required_input_keys))
     required_output_keys = {'boxes', 'scores', 'classes', 'raw_masks'}
     assert required_output_keys.issubset(net.outputs.keys()), \
         'Demo supports only topologies with the following output keys: {}'.format(', '.join(required_output_keys))
 
-    n, c, h, w = net.inputs['im_data'].shape
+    n, c, h, w = net.input_info['im_data'].input_data.shape
     assert n == 1, 'Only batch 1 is supported by the demo application'
 
     log.info('Loading IR to the plugin...')

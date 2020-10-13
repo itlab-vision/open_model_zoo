@@ -15,8 +15,6 @@
 
 #include <inference_engine.hpp>
 
-#include <ie_iextension.h>
-
 #include <samples/common.hpp>
 #include <samples/slog.hpp>
 #include <samples/args_helper.hpp>
@@ -66,7 +64,7 @@ bool ParseAndCheckCommandLine(int argc, char *argv[]) {
     return true;
 }
 
-cv::Mat resizeImage(cv::Mat& image, int modelInputResolution) {
+cv::Mat resizeImage(const cv::Mat& image, int modelInputResolution) {
     double scale = static_cast<double>(modelInputResolution) / std::min(image.cols, image.rows);
 
     cv::Mat resizedImage;
@@ -85,15 +83,14 @@ cv::Mat resizeImage(cv::Mat& image, int modelInputResolution) {
 }
 
 std::vector<std::vector<unsigned>> topResults(Blob& inputBlob, unsigned numTop) {
-    using currentBlobType = PrecisionTrait<Precision::FP32>::value_type;
-    TBlob<currentBlobType>& tblob = dynamic_cast<TBlob<currentBlobType>&>(inputBlob);
+    TBlob<float>& tblob = dynamic_cast<TBlob<float>&>(inputBlob);
     size_t batchSize =  tblob.getTensorDesc().getDims()[0];
     numTop = static_cast<unsigned>(std::min<size_t>(size_t(numTop), tblob.size()));
     
     std::vector<std::vector<unsigned>> output(batchSize);
     for (size_t i = 0; i < batchSize; i++) {
         size_t offset = i * (tblob.size() / batchSize);
-        currentBlobType *batchData = tblob.data() + offset;
+        float *batchData = tblob.data() + offset;
         std::vector<unsigned> indices(tblob.size() / batchSize);
         std::iota(std::begin(indices), std::end(indices), 0);
         std::partial_sort(std::begin(indices), std::begin(indices) + numTop, std::end(indices),
@@ -109,6 +106,8 @@ std::vector<std::vector<unsigned>> topResults(Blob& inputBlob, unsigned numTop) 
 
 int main(int argc, char *argv[]) {
     try {
+        std::cout << "InferenceEngine: " << *GetInferenceEngineVersion() << std::endl;
+
         if (!ParseAndCheckCommandLine(argc, argv)) {
             return 0;
         }

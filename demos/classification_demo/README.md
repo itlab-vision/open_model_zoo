@@ -5,7 +5,7 @@ The demo shows an example of using neural networks for image classification.
 You can use the following pre-trained models with the demo:
 
 * `alexnet`
-* `resnet-50`
+* `resnet-50-tf`
 * `vgg19`
 * all other classification models (please, check [models.lst](./models.lst) file)
 
@@ -46,7 +46,7 @@ Options:
     -nstreams "<integer>"     Optional. Specify count of streams.
     -nireq "<integer>"        Optional. Number of infer requests.
     -nt "<integer>"           Optional. Number of top results. Default value is 5. Must be >= 1.
-    -res "<WxH>"              Optional. Set image grid resolution in format WxH. Default value is 1920x1080.
+    -res "<WxH>"              Optional. Set image grid resolution in format WxH. Default value is 1280x720.
     -no_show                  Optional. Disable showing of processed images.
     -time "<integer>"         Optional. Time in seconds to execute program. Default is -1 (infinite time).
     -u                        Optional. List of monitors to show initially.
@@ -92,7 +92,18 @@ It has the following format:
 
 Class index values must be in range from 0 to 1000. If you want to use "other" class, which is supported only by a small subset of models, specify it with -1 index.
 
-["Labels" file](./synset_words.txt) contains the list of human-readable labels, one line for each class.
+"Labels" file contains the list of human-readable labels, one line for each class.
+
+Please note that you should use [imagenet_2015_classes.txt](./imagenet_2015_classes.txt) labels file with the following models:
+- googlenet-v2
+- se-inception
+- se-resnet-101
+- se-resnet-152
+- se-resnet-50
+- se-resnext-101
+- se-resnext-50
+
+and [imagenet_2012_classes.txt](./imagenet_2012_classes.txt) labels file with all other models supported by the demo.
 
 ## See Also
 * [Using Open Model Zoo demos](../README.md)

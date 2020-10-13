@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import copy
 from pathlib import Path
 import pytest
@@ -162,7 +163,7 @@ class TestAnnotationConversion:
             'accuracy_checker.dataset.make_subset'
         )
         Dataset(config)
-        subset_maker_mock.assert_called_once_with(converted_annotation, 1, 666)
+        subset_maker_mock.assert_called_once_with(converted_annotation, 1, 666, True)
 
     def test_annoation_conversion_subset_more_than_dataset_size(self, mocker):
         addition_options = {
@@ -288,7 +289,7 @@ class TestAnnotationConversion:
             'accuracy_checker.dataset.make_subset'
         )
         Dataset(config)
-        subset_maker_mock.assert_called_once_with(converted_annotation, 1, 666)
+        subset_maker_mock.assert_called_once_with(converted_annotation, 1, 666, True)
 
     def test_annotation_conversion_subset_with_seed(self, mocker):
         addition_options = {
@@ -327,3 +328,19 @@ class TestAnnotationConversion:
         Dataset(config)
         annotation_saver_mock.assert_called_once_with([converted_annotation[1]], None, Path('custom'), None)
 
+    def test_annotation_conversion_subset_with_disabled_shuffle(self, mocker):
+        addition_options = {
+            'annotation_conversion': {'converter': 'wider', 'annotation_file': Path('file')},
+            'subsample_size': 1,
+            'shuffle': False
+        }
+        config = copy_dataset_config(self.dataset_config)
+        config.update(addition_options)
+        converted_annotation = make_representation(['0 0 0 5 5', '0 1 1 10 10'], True)
+        mocker.patch(
+            'accuracy_checker.annotation_converters.WiderFormatConverter.convert',
+            return_value=ConverterReturn(converted_annotation, None, None)
+        )
+        dataset = Dataset(config)
+        annotation = dataset.annotation
+        assert annotation == [converted_annotation[0]]

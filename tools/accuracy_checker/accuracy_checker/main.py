@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
 from argparse import ArgumentParser
 from functools import partial
@@ -24,13 +25,13 @@ import cv2
 
 from .config import ConfigReader
 from .logging import print_info, add_file_handler, exception
-from .evaluators import ModelEvaluator, PipeLineEvaluator, ModuleEvaluator
+from .evaluators import ModelEvaluator, ModuleEvaluator
 from .progress_reporters import ProgressReporter
-from .utils import get_path, cast_to_bool, check_file_existence
+from .utils import get_path, cast_to_bool, check_file_existence, validate_print_interval
+from . import __version__
 
 EVALUATION_MODE = {
     'models': ModelEvaluator,
-    'pipelines': PipeLineEvaluator,
     'evaluations': ModuleEvaluator
 }
 
@@ -241,10 +242,35 @@ def build_arguments_parser():
         type=partial(get_path, is_directory=True)
     )
     parser.add_argument(
+        '--ie_preprocessing', help='enable preprocessing via Inference Engine. Accepted only for dlsdk launcher.',
+        required=False, default=False, type=cast_to_bool
+    )
+    parser.add_argument(
         '-ss', '--subsample_size', help="dataset subsample size",
         required=False,
         type=str
     )
+    parser.add_argument(
+        '--shuffle', help="Allow shuffle annotation during creation a subset",
+        required=False,
+        type=cast_to_bool
+    )
+    parser.add_argument(
+        '--version', action='version', version='%(prog)s {version}'.format(version=__version__),
+        help='show tool version and exit'
+    )
+    parser.add_argument(
+        '--profile',
+        help='Activate metric profiling mode',
+        required=False,
+        type=cast_to_bool
+    )
+    parser.add_argument(
+        '--profiler_logs_dir', required=False, type=partial(get_path, is_directory=True), default=Path.cwd()
+    )
+    parser.add_argument('--profile_report_type', required=False, choices=['csv', 'json'], default='csv')
+    parser.add_argument('--intermediate_metrics_results', required=False, default=False, type=cast_to_bool)
+    parser.add_argument('--metrics_interval', required=False, default=1000, type=int)
 
     return parser
 
@@ -256,6 +282,14 @@ def main():
     progress_reporter = ProgressReporter.provide(progress_bar_provider, None, print_interval=args.progress_interval)
     if args.log_file:
         add_file_handler(args.log_file)
+    intermdeiate_metrics = args.intermediate_metrics_results
+    evaluator_kwargs = {}
+    if intermdeiate_metrics:
+        validate_print_interval(args.metrics_interval)
+        evaluator_kwargs['intermediate_metrics_results'] = intermdeiate_metrics
+        evaluator_kwargs['metrics_interval'] = args.metrics_interval
+        evaluator_kwargs['ignore_result_formatting'] = args.ignore_result_formatting
+
 
     config, mode = ConfigReader.merge(args)
     evaluator_class = EVALUATION_MODE.get(mode)
@@ -266,7 +300,14 @@ def main():
             processing_info = evaluator_class.get_processing_info(config_entry)
             print_processing_info(*processing_info)
             evaluator = evaluator_class.from_configs(config_entry)
-            evaluator.process_dataset(args.stored_predictions, progress_reporter=progress_reporter)
+            if args.profile:
+                _timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                profiler_dir = args.profiler_logs_dir / _timestamp
+                print_info('Metric profiling activated. Profiler output will be stored in {}'.format(profiler_dir))
+                evaluator.set_profiling_dir(profiler_dir)
+            evaluator.process_dataset(
+                stored_predictions=args.stored_predictions, progress_reporter=progress_reporter, **evaluator_kwargs
+            )
             metrics_results, _ = evaluator.extract_metrics_results(
                 print_results=True, ignore_results_formatting=args.ignore_result_formatting
             )

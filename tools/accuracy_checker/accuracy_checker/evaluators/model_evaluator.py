@@ -1,5 +1,5 @@
 """
-Copyright (c) 2019 Intel Corporation
+Copyright (c) 2018-2020 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -70,18 +70,32 @@ class ModelEvaluator(BaseEvaluator):
         if data_reader_type in REQUIRES_ANNOTATIONS:
             data_source = dataset.annotation
         data_reader = BaseReader.provide(data_reader_type, data_source, data_reader_config)
-        launcher = create_launcher(launcher_config, model_name)
+        launcher_kwargs = {}
+        enable_ie_preprocessing = (
+            dataset_config.get('_ie_preprocessing', False)
+            if launcher_config['framework'] == 'dlsdk' else False
+        )
+        preprocessor = PreprocessingExecutor(
+            dataset_config.get('preprocessing'), dataset_name, dataset.metadata,
+            enable_ie_preprocessing=enable_ie_preprocessing
+        )
+        if enable_ie_preprocessing:
+            launcher_kwargs['preprocessor'] = preprocessor
+        if launcher_config['framework'] == 'dummy' and launcher_config.get('provide_identifiers', False):
+            launcher_kwargs = {'identifiers': dataset.identifiers}
+        launcher = create_launcher(launcher_config, model_name, **launcher_kwargs)
         async_mode = launcher.async_mode if hasattr(launcher, 'async_mode') else False
         config_adapter = launcher_config.get('adapter')
         adapter = None if not config_adapter else create_adapter(config_adapter, launcher, dataset)
         input_feeder = InputFeeder(
-            launcher.config.get('inputs', []), launcher.inputs, launcher.fit_to_input, launcher.default_layout
+            launcher.config.get('inputs', []), launcher.inputs, launcher.fit_to_input, launcher.default_layout,
+            launcher_config['framework'] == 'dummy'
         )
-        preprocessor = PreprocessingExecutor(
-            dataset_config.get('preprocessing'), dataset_name, dataset.metadata, launcher.inputs_info_for_meta()
-        )
+        preprocessor.input_shapes = launcher.inputs_info_for_meta()
         postprocessor = PostprocessingExecutor(dataset_config.get('postprocessing'), dataset_name, dataset.metadata)
         metric_dispatcher = MetricsExecutor(dataset_config.get('metrics', []), dataset)
+        if metric_dispatcher.profile_metrics:
+            metric_dispatcher.set_processing_info(ModelEvaluator.get_processing_info(model_config))
 
         return cls(
             launcher, input_feeder, adapter, data_reader,
@@ -95,7 +109,7 @@ class ModelEvaluator(BaseEvaluator):
 
         return (
             config['name'],
-            launcher_config['framework'], launcher_config['device'], launcher_config.get('tags'),
+            launcher_config['framework'], launcher_config.get('device', ''), launcher_config.get('tags'),
             dataset_config['name']
         )
 
@@ -126,19 +140,25 @@ class ModelEvaluator(BaseEvaluator):
         def prepare_dataset():
             if self.dataset.batch is None:
                 self.dataset.batch = self.launcher.batch
+            if progress_reporter:
+                progress_reporter.reset(self.dataset.size)
 
         prepare_dataset()
 
-        if self.launcher.allow_reshape_input or self.preprocessor.has_multi_infer_transformations:
+        if (
+                self.launcher.allow_reshape_input or self.input_feeder.lstm_inputs or
+                self.preprocessor.has_multi_infer_transformations or
+                getattr(self.reader, 'multi_infer', False)
+        ):
             warning('Model can not to be processed in async mode. Switched to sync.')
             return self.process_dataset_sync(stored_predictions, progress_reporter, *args, **kwargs)
 
         if self._is_stored(stored_predictions) or isinstance(self.launcher, DummyLauncher):
             self._annotations, self._predictions = self._load_stored_predictions(stored_predictions, progress_reporter)
 
-        if progress_reporter:
-            progress_reporter.reset(self.dataset.size)
-
+        output_callback = kwargs.get('output_callback')
+        metric_config = self._configure_metrics(kwargs, output_callback)
+        _, compute_intermediate_metric_res, metric_interval, ignore_results_formatting = metric_config
         predictions_to_store = []
         dataset_iterator = iter(enumerate(self.dataset))
         infer_requests_pool = {ir.request_id: ir for ir in self.launcher.get_async_requests()}
@@ -174,6 +194,10 @@ class ModelEvaluator(BaseEvaluator):
 
                     if progress_reporter:
                         progress_reporter.update(batch_id, len(batch_predictions))
+                        if compute_intermediate_metric_res and progress_reporter.current % metric_interval == 0:
+                            self.compute_metrics(
+                                print_results=True, ignore_results_formatting=ignore_results_formatting
+                            )
 
         if progress_reporter:
             progress_reporter.finish()
@@ -195,15 +219,14 @@ class ModelEvaluator(BaseEvaluator):
 
         if self.dataset.batch is None:
             self.dataset.batch = self.launcher.batch
-        raw_outputs_callback = kwargs.get('output_callback')
+        output_callback = kwargs.get('output_callback')
+        metric_config = self._configure_metrics(kwargs, output_callback)
+        enable_profiling, compute_intermediate_metric_res, metric_interval, ignore_results_formatting = metric_config
         predictions_to_store = []
         for batch_id, (batch_input_ids, batch_annotation) in enumerate(self.dataset):
             filled_inputs, batch_meta, batch_identifiers = self._get_batch_input(batch_annotation)
             batch_predictions = self.launcher.predict(filled_inputs, batch_meta, **kwargs)
-            if raw_outputs_callback:
-                raw_outputs_callback(
-                    batch_predictions, network=self.launcher.network, exec_network=self.launcher.exec_network
-                )
+
             if self.adapter:
                 self.adapter.output_blob = self.adapter.output_blob or self.launcher.output_blob
                 batch_predictions = self.adapter.process(batch_predictions, batch_identifiers, batch_meta)
@@ -212,7 +235,12 @@ class ModelEvaluator(BaseEvaluator):
                 predictions_to_store.extend(copy.deepcopy(batch_predictions))
 
             annotations, predictions = self.postprocessor.process_batch(batch_annotation, batch_predictions, batch_meta)
-            self.metric_executor.update_metrics_on_batch(batch_input_ids, annotations, predictions)
+            _, profile_result = self.metric_executor.update_metrics_on_batch(
+                batch_input_ids, annotations, predictions, enable_profiling
+            )
+            if output_callback:
+                callback_kwargs = {'profiling_result': profile_result} if enable_profiling else {}
+                output_callback(annotations, predictions, **callback_kwargs)
 
             if self.metric_executor.need_store_predictions:
                 self._annotations.extend(annotations)
@@ -220,6 +248,8 @@ class ModelEvaluator(BaseEvaluator):
 
             if progress_reporter:
                 progress_reporter.update(batch_id, len(batch_predictions))
+                if compute_intermediate_metric_res and progress_reporter.current % metric_interval == 0:
+                    self.compute_metrics(print_results=True, ignore_results_formatting=ignore_results_formatting)
 
         if progress_reporter:
             progress_reporter.finish()
@@ -262,6 +292,22 @@ class ModelEvaluator(BaseEvaluator):
 
         return free_irs, queued_irs
 
+    def process_single_image(self, image):
+        input_data = [self.reader(identifier=image)]
+        batch_input = self.preprocessor.process(input_data)
+        _, batch_meta = extract_image_representations(batch_input)
+        filled_inputs = self.input_feeder.fill_inputs(batch_input)
+        batch_predictions = self.launcher.predict(filled_inputs, batch_meta)
+
+        if self.adapter:
+            self.adapter.output_blob = self.adapter.output_blob or self.launcher.output_blob
+            batch_predictions = self.adapter.process(batch_predictions, [image], batch_meta)
+
+        _, predictions = self.postprocessor.process_batch(
+            None, batch_predictions, batch_meta, allow_empty_annotation=True
+        )
+        return predictions[0]
+
     def compute_metrics(self, print_results=True, ignore_results_formatting=False):
         if self._metrics_results:
             del self._metrics_results
@@ -302,7 +348,9 @@ class ModelEvaluator(BaseEvaluator):
             presenter.write_result(metric_result, ignore_results_formatting)
 
     def load(self, stored_predictions, progress_reporter):
-        self._annotations = self.dataset.annotation
+        annotations = self.dataset.annotation
+        if self.postprocessor.has_processors:
+            self.dataset.provide_data_info(self.reader, annotations)
         launcher = self.launcher
         if not isinstance(launcher, DummyLauncher):
             launcher = DummyLauncher({
@@ -311,12 +359,15 @@ class ModelEvaluator(BaseEvaluator):
                 'data_path': stored_predictions
             }, adapter=None)
 
-        predictions = launcher.predict([annotation.identifier for annotation in self._annotations])
+        identifiers = self.dataset.identifiers
+        predictions = launcher.predict(identifiers)
+        if self.adapter is not None:
+            predictions = self.adapter.process(predictions, identifiers, [])
 
         if progress_reporter:
             progress_reporter.finish(False)
 
-        return self._annotations, predictions
+        return annotations, predictions
 
     @property
     def metrics_results(self):
@@ -324,6 +375,21 @@ class ModelEvaluator(BaseEvaluator):
             self.compute_metrics(print_results=False)
         computed_metrics = copy.deepcopy(self._metrics_results)
         return computed_metrics
+
+    def set_profiling_dir(self, profiler_dir):
+        self.metric_executor.set_profiling_dir(profiler_dir)
+
+    def _configure_metrics(self, config, output_callback):
+        enable_profiling = config.get('profile', False)
+        profile_type = 'json' if output_callback and enable_profiling else config.get('profile_report_type')
+        if enable_profiling:
+            self.metric_executor.enable_profiling(self.dataset, profile_type)
+        compute_intermediate_metric_res = config.get('intermediate_metrics_results', False)
+        metric_interval, ignore_results_formatting = None, None
+        if compute_intermediate_metric_res:
+            metric_interval = config.get('metrics_interval', 1000)
+            ignore_results_formatting = config.get('ignore_results_formatting', False)
+        return enable_profiling, compute_intermediate_metric_res, metric_interval, ignore_results_formatting
 
     @staticmethod
     def store_predictions(stored_predictions, predictions):

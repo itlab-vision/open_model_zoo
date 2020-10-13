@@ -79,12 +79,13 @@ def build_argparser():
                       required=True, type=str, metavar='"<path>"')
     args.add_argument('-i',
                       dest='input_source',
-                      help='Required. Path to an image, video file or a numeric camera ID.',
+                      help='Required. Input to process.',
                       required=True, type=str, metavar='"<path>"')
     args.add_argument('-d', '--device',
-                      help='Optional. Specify the target device to infer on: CPU, GPU, FPGA, HDDL or MYRIAD. '
+                      help='Optional. Specify the target device to infer on, i.e : CPU, GPU. '
                            'The demo will look for a suitable plugin for device specified '
-                           '(by default, it is CPU).',
+                           '(by default, it is CPU). Please refer to OpenVINO documentation '
+                           'for the list of devices supported by the model.',
                       default='CPU', type=str, metavar='"<device>"')
     args.add_argument('-l', '--cpu_extension',
                       help='Required for CPU custom layers. '
@@ -191,24 +192,14 @@ def main():
     log.info('Loading decoder part of text recognition network')
     text_dec_net = ie.read_network(args.text_dec_model, os.path.splitext(args.text_dec_model)[0] + '.bin')
 
-    if 'CPU' in args.device:
-        supported_layers = ie.query_network(mask_rcnn_net, 'CPU')
-        not_supported_layers = [l for l in mask_rcnn_net.layers.keys() if l not in supported_layers]
-        if len(not_supported_layers) != 0:
-            log.error('Following layers are not supported by the plugin for specified device {}:\n {}'.
-                      format(args.device, ', '.join(not_supported_layers)))
-            log.error("Please try to specify cpu extensions library path in sample's command line parameters using -l "
-                      "or --cpu_extension command line argument")
-            sys.exit(1)
-
     required_input_keys = {'im_data', 'im_info'}
-    assert required_input_keys == set(mask_rcnn_net.inputs.keys()), \
+    assert required_input_keys == set(mask_rcnn_net.input_info), \
         'Demo supports only topologies with the following input keys: {}'.format(', '.join(required_input_keys))
     required_output_keys = {'boxes', 'scores', 'classes', 'raw_masks', 'text_features'}
     assert required_output_keys.issubset(mask_rcnn_net.outputs.keys()), \
         'Demo supports only topologies with the following output keys: {}'.format(', '.join(required_output_keys))
 
-    n, c, h, w = mask_rcnn_net.inputs['im_data'].shape
+    n, c, h, w = mask_rcnn_net.input_info['im_data'].input_data.shape
     assert n == 1, 'Only batch 1 is supported by the demo application'
 
     log.info('Loading IR to the plugin...')
@@ -216,26 +207,29 @@ def main():
     text_enc_exec_net = ie.load_network(network=text_enc_net, device_name=args.device)
     text_dec_exec_net = ie.load_network(network=text_dec_net, device_name=args.device)
 
-    hidden_shape = text_dec_net.inputs[args.trd_input_prev_hidden].shape
+    hidden_shape = text_dec_net.input_info[args.trd_input_prev_hidden].input_data.shape
 
     del mask_rcnn_net
     del text_enc_net
     del text_dec_net
 
-    try:
-        input_source = int(args.input_source)
-        cap = cv2.VideoCapture(input_source)
-    except ValueError:
-        input_source = args.input_source
-        if os.path.isdir(input_source):
-            cap = FolderCapture(input_source)
-        else:
+    input_source = args.input_source
+    if os.path.isdir(input_source):
+        cap = FolderCapture(input_source)
+    else:
+        try:
+            input_source = int(args.input_source)
+            cap = cv2.VideoCapture(input_source)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        except ValueError:
             cap = cv2.VideoCapture(input_source)
 
     if not cap.isOpened():
-        log.error('Failed to open "{}"'.format(args.input_source))
-    if isinstance(cap, cv2.VideoCapture):
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        raise RuntimeError('Failed to open "{}"'.format(input_source))
+
+    ret, frame = cap.read()
+    if not ret:
+        raise RuntimeError("Can't read an image from the input")
 
     if args.no_track:
         tracker = None
@@ -246,15 +240,10 @@ def main():
 
     render_time = 0
 
-    presenter = monitors.Presenter(args.utilization_monitors, 45,
-        (round(cap.get(cv2.CAP_PROP_FRAME_WIDTH) / 4), round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) / 8)))
+    presenter = monitors.Presenter(args.utilization_monitors, 45, (frame.shape[1] // 4, frame.shape[0] // 8))
     log.info('Starting inference...')
     print("To close the application, press 'CTRL+C' here or switch to the output window and press ESC key")
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
+    while ret:
         if not args.keep_aspect_ratio:
             # Resize the image to a target size.
             scale_x = w / frame.shape[1]
@@ -375,6 +364,8 @@ def main():
             if key == esc_code:
                 break
             presenter.handleKey(key)
+
+        ret, frame = cap.read()
 
     print(presenter.reportMeans())
     cv2.destroyAllWindows()
