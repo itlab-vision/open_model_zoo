@@ -30,8 +30,6 @@ The quality metrics were calculated on the SQuAD v1.1 dataset ("dev" split). Max
 | F1                        |        91.57% |
 | Exact match (EM)          |        85.04% |
 
-## Performance
-
 ## Input
 
 1. Token IDs, name: `input_ids`, shape: [1x384].
@@ -69,4 +67,4 @@ End position is floating point-valued logit scores for end position.
 ## Legal Information
 [*] Other names and brands may be claimed as the property of others.
 
-The original `bert-large-uncased-whole-word-masking-finetuned-squad` model is taken from [Transformers](https://github.com/huggingface/transformers) library, which is distributed under the [Apache License, Version 2.0](https://raw.githubusercontent.com/huggingface/transformers/master/LICENSE). 
+The original `bert-large-uncased-whole-word-masking-finetuned-squad` model is taken from [Transformers](https://github.com/huggingface/transformers) library, which is distributed under the [Apache License, Version 2.0](https://raw.githubusercontent.com/huggingface/transformers/master/LICENSE).

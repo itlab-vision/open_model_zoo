@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,8 +36,30 @@ class BgrToRgb(Preprocessor):
 class BgrToGray(Preprocessor):
     __provider__ = 'bgr_to_gray'
 
+    @classmethod
+    def parameters(cls):
+        parameters = super().parameters()
+        parameters.update({
+            "cast_to_float": BoolField(
+                default=True,
+                description="Parameter specifies if the result image should be casted to np.float32"
+            )
+        })
+        return parameters
+
+    def configure(self):
+        self.cast_to_float = self.get_value_from_config('cast_to_float')
+
     def process(self, image, annotation_meta=None):
-        image.data = np.expand_dims(cv2.cvtColor(image.data, cv2.COLOR_BGR2GRAY).astype(np.float32), -1)
+        def process_data(data):
+            gray_image = np.expand_dims(cv2.cvtColor(data, cv2.COLOR_BGR2GRAY), -1)
+            if self.cast_to_float:
+                gray_image = gray_image.astype(np.float32)
+            return gray_image
+
+        image.data = process_data(image.data) if not isinstance(image.data, list) else [
+            process_data(fragment) for fragment in image.data
+        ]
         return image
 
 
@@ -56,10 +78,57 @@ class RgbToBgr(Preprocessor):
 class RgbToGray(Preprocessor):
     __provider__ = 'rgb_to_gray'
 
+    @classmethod
+    def parameters(cls):
+        parameters = super().parameters()
+        parameters.update({
+            "cast_to_float": BoolField(
+                default=True,
+                description="Parameter specifies if the result image should be casted to np.float32"
+            )
+        })
+        return parameters
+
+    def configure(self):
+        self.cast_to_float = self.get_value_from_config('cast_to_float')
+
     def process(self, image, annotation_meta=None):
-        image.data = np.expand_dims(cv2.cvtColor(image.data, cv2.COLOR_RGB2GRAY).astype(np.float32), -1)
+        def process_data(data):
+            gray_image = np.expand_dims(cv2.cvtColor(data, cv2.COLOR_RGB2GRAY), -1)
+            if self.cast_to_float:
+                gray_image = gray_image.astype(np.float32)
+            return gray_image
+
+        image.data = process_data(image.data) if not isinstance(image.data, list) else [
+            process_data(fragment) for fragment in image.data
+        ]
         return image
 
+
+class BGRToLAB(Preprocessor):
+    __provider__ = 'bgr_to_lab'
+
+    def process(self, image, annotation_meta=None):
+        def process_data(data):
+            return cv2.cvtColor(data.astype(np.float32) / 255, cv2.COLOR_BGR2LAB)
+
+        image.data = process_data(image.data) if not isinstance(image.data, list) else [
+            process_data(fragment) for fragment in image.data
+        ]
+        return image
+
+
+class RGBToLAB(Preprocessor):
+    __provider__ = 'bgr_to_lab'
+
+    def process(self, image, annotation_meta=None):
+        def process_data(data):
+            return cv2.cvtColor(data.astype(np.float32) / 255, cv2.COLOR_RGB2LAB)
+
+        image.data = process_data(image.data) if not isinstance(image.data, list) else [
+            process_data(fragment) for fragment in image.data
+        ]
+        return image
 
 class TfConvertImageDType(Preprocessor):
     __provider__ = 'tf_convert_image_dtype'
@@ -73,7 +142,8 @@ class TfConvertImageDType(Preprocessor):
                 '*tf_convert_image_dtype* operation requires TensorFlow. '
                 'Please install it before usage. {}'.format(import_error.msg)
             )
-        tf.enable_eager_execution()
+        if tf.__version__ < '2.0.0':
+            tf.enable_eager_execution()
         self.converter = tf.image.convert_image_dtype
         self.dtype = tf.float32
 
@@ -118,12 +188,18 @@ class BGR2YUVConverter(Preprocessor):
         parameters.update({
             'split_channels': BoolField(
                 optional=True, default=False, description='Allow treat channels as independent input'
+            ),
+            'shrink_uv': BoolField(
+                optional=True, default=False, description='Allow shrink uv-channels after split'
             )
         })
         return parameters
 
     def configure(self):
         self.split_channels = self.get_value_from_config('split_channels')
+        self.shrink_uv = self.get_value_from_config('shrink_uv')
+        if self.shrink_uv and not self.split_channels:
+            self.split_channels = True
 
     def process(self, image, annotation_meta=None):
         data = image.data
@@ -134,6 +210,9 @@ class BGR2YUVConverter(Preprocessor):
             v = yuvdata[:, :, 2]
             identifier = image.identifier
             new_identifier = ['{}_y'.format(identifier), '{}_u'.format(identifier), '{}_v'.format(identifier)]
+            if self.shrink_uv:
+                u = cv2.resize(u, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
+                v = cv2.resize(v, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
             yuvdata = [np.expand_dims(y, -1), np.expand_dims(u, -1), np.expand_dims(v, -1)]
             image.identifier = new_identifier
         image.data = yuvdata

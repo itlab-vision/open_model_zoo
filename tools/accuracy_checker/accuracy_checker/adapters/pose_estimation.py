@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -55,8 +55,11 @@ class HumanPoseAdapter(Adapter):
 
         return parameters
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.WARN_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.WARN_ON_EXTRA_ARGUMENT
+        )
 
     def configure(self):
         self.part_affinity_fields = self.get_value_from_config('part_affinity_fields_out')
@@ -70,13 +73,13 @@ class HumanPoseAdapter(Adapter):
                     'and part_affinity_fields_out or not contain them at all (in single output model case)'
                 )
             self._keypoints_heatmap_bias = self.keypoints_heatmap + '/add_'
-            self._part_affinity_fileds_bias = self.part_affinity_fields + '/add_'
+            self._part_affinity_fields_bias = self.part_affinity_fields + '/add_'
 
     def process(self, raw, identifiers, frame_meta):
         result = []
         raw_outputs = self._extract_predictions(raw, frame_meta)
         if not self.concat_out:
-            if not contains_any(raw_outputs, [self.part_affinity_fields, self._part_affinity_fileds_bias]):
+            if not contains_any(raw_outputs, [self.part_affinity_fields, self._part_affinity_fields_bias]):
                 raise ConfigError('part affinity fields output not found')
             if not contains_any(raw_outputs, [self.keypoints_heatmap, self._keypoints_heatmap_bias]):
                 raise ConfigError('keypoints heatmap output not found')
@@ -85,10 +88,11 @@ class HumanPoseAdapter(Adapter):
             ]
             pafs = raw_outputs[
                 self.part_affinity_fields if self.part_affinity_fields in raw_outputs
-                else self._part_affinity_fileds_bias
+                else self._part_affinity_fields_bias
             ]
             raw_output = zip(identifiers, keypoints_heatmap, pafs, frame_meta)
         else:
+            self.select_output_blob(raw_outputs)
             concat_out = raw_outputs[self.output_blob]
             keypoints_num = concat_out.shape[1] // 3
             keypoints_heat_map = concat_out[:, :keypoints_num, :]
@@ -294,8 +298,8 @@ class HumanPoseAdapter(Adapter):
     def group_peaks(self, peaks, pafs, kpt_num=20, threshold=0.05):
         subset = []
         candidates = np.array([item for sublist in peaks for item in sublist])
-        for keypoint_id, maped_keypoints in enumerate(self.map_idx):
-            score_mid = pafs[:, :, [x - 19 for x in maped_keypoints]]
+        for keypoint_id, mapped_keypoints in enumerate(self.map_idx):
+            score_mid = pafs[:, :, [x - 19 for x in mapped_keypoints]]
             candidate_a = peaks[self.limb_seq[keypoint_id][0] - 1]
             candidate_b = peaks[self.limb_seq[keypoint_id][1] - 1]
             idx_joint_a = self.limb_seq[keypoint_id][0] - 1
@@ -374,13 +378,16 @@ class SingleHumanPoseAdapter(Adapter):
     __provider__ = 'single_human_pose_estimation'
     prediction_types = (PoseEstimationPrediction, )
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.WARN_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.WARN_ON_EXTRA_ARGUMENT
+        )
 
     def process(self, raw, identifiers=None, frame_meta=None):
         result = []
         raw_outputs = self._extract_predictions(raw, frame_meta)
-
+        self.select_output_blob(raw_outputs)
         outputs_batch = raw_outputs[self.output_blob]
         for i, heatmaps in enumerate(outputs_batch):
             heatmaps = np.transpose(heatmaps, (1, 2, 0))
@@ -436,12 +443,13 @@ class StackedHourGlassNetworkAdapter(Adapter):
         return params
 
     def configure(self):
-        self.score_map_out = self.get_value_from_config('score_map_out')
+        self.score_map_out = self.get_value_from_config('score_map_output')
 
     def process(self, raw, identifiers, frame_meta):
-        if self.score_map_out is None:
-            self.score_map_out = self.output_blob
         raw_outputs = self._extract_predictions(raw, frame_meta)
+        if self.score_map_out is None:
+            self.select_output_blob(raw_outputs)
+            self.score_map_out = self.output_blob
         score_map_batch = raw_outputs[self.score_map_out]
         result = []
         for identifier, score_map, meta in zip(identifiers, score_map_batch, frame_meta):
@@ -484,7 +492,7 @@ class StackedHourGlassNetworkAdapter(Adapter):
             hm = output[p]
             px = int(math.floor(coords[p][0]))
             py = int(math.floor(coords[p][1]))
-            if 1 < px < res[0] and  1 < py < res[1]:
+            if 1 < px < res[0] and 1 < py < res[1]:
                 diff = np.array([hm[py - 1][px] - hm[py - 1][px - 2], hm[py][px - 1] - hm[py - 2][px - 1]])
                 coords[p] += np.sign(diff).astype(float) * .25
         coords += 0.5

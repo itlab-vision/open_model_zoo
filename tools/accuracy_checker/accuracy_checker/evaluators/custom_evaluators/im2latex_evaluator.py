@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,41 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from pathlib import Path
+from collections import OrderedDict
 import numpy as np
 
 from ..base_evaluator import BaseEvaluator
 from ...config import ConfigError
 from ...utils import contains_all, extract_image_representations
 from ...launcher import create_launcher
-from ...data_readers import BaseReader
 from ...dataset import Dataset
+from ...logging import print_info
 from ...metrics import MetricsExecutor
 from ...preprocessor import PreprocessingExecutor
 from ...representation import CharacterRecognitionPrediction
 
 
 class Im2latexEvaluator(BaseEvaluator):
-    def __init__(self, dataset, reader, preprocessing, metric_executor, launcher, model):
+    def __init__(self, dataset, preprocessing, metric_executor, launcher, model):
         self.dataset = dataset
         self.preprocessing_executor = preprocessing
         self.metric_executor = metric_executor
         self.launcher = launcher
         self.model = model
-        self.reader = reader
         self._metrics_results = []
 
     @classmethod
     def from_configs(cls, config):
         dataset_config = config['datasets'][0]
         dataset = Dataset(dataset_config)
-        data_reader_config = dataset_config.get('reader', 'opencv_imread')
-        data_source = dataset_config['data_source']
-        if isinstance(data_reader_config, str):
-            reader = BaseReader.provide(data_reader_config, data_source)
-        elif isinstance(data_reader_config, dict):
-            reader = BaseReader.provide(data_reader_config['type'], data_source, data_reader_config)
-        else:
-            raise ConfigError('reader should be dict or string')
         preprocessing = PreprocessingExecutor(dataset_config.get('preprocessing', []), dataset.name)
         metrics_executor = MetricsExecutor(dataset_config['metrics'], dataset)
         launcher = create_launcher(config['launchers'][0], delayed_model_loading=True)
@@ -60,7 +52,7 @@ class Im2latexEvaluator(BaseEvaluator):
             meta,
             config.get('_model_is_blob'),
         )
-        return cls(dataset, reader, preprocessing, metrics_executor, launcher, model)
+        return cls(dataset, preprocessing, metrics_executor, launcher, model)
 
     def process_dataset(self, stored_predictions, progress_reporter, *args, **kwargs):
         self._annotations, self._predictions = [], []
@@ -72,20 +64,18 @@ class Im2latexEvaluator(BaseEvaluator):
         if progress_reporter:
             progress_reporter.reset(self.dataset.size)
         self.dataset_meta = self.dataset.metadata
-        for batch_id, (_, batch_annotation) in enumerate(self.dataset):
+        for batch_id, (_, batch_annotation, batch_inputs, batch_identifiers) in enumerate(self.dataset):
 
-            batch_identifiers = [annotation.identifier for annotation in batch_annotation]
-            batch_input = [self.reader(identifier=identifier) for identifier in batch_identifiers]
-            batch_input = self.preprocessing_executor.process(batch_input, batch_annotation)
-            batch_input, _ = extract_image_representations(batch_input)
-            batch_prediction = self.model.predict(batch_identifiers, batch_input)
+            batch_inputs = self.preprocessing_executor.process(batch_inputs, batch_annotation)
+            batch_inputs, _ = extract_image_representations(batch_inputs)
+            batch_prediction = self.model.predict(batch_identifiers, batch_inputs)
             batch_prediction = [CharacterRecognitionPrediction(
                 label=batch_prediction, identifier=batch_annotation[0].identifier)]
             self._annotations.extend(batch_annotation)
             self._predictions.extend(batch_prediction)
 
             if progress_reporter:
-                progress_reporter.update(batch_id, len(batch_input))
+                progress_reporter.update(batch_id, len(batch_inputs))
                 if compute_intermediate_metric_res and progress_reporter.current % metric_interval == 0:
                     self.compute_metrics(print_results=True, ignore_results_formatting=ignore_results_formatting)
 
@@ -132,6 +122,10 @@ class Im2latexEvaluator(BaseEvaluator):
         for presenter, metric_result in zip(result_presenters, self._metrics_results):
             presenter.write_result(metric_result, ignore_results_formatting)
 
+    @property
+    def dataset_size(self):
+        return self.dataset.size
+
     def release(self):
         self.model.release()
         self.launcher.release()
@@ -158,7 +152,7 @@ class BaseModel:
         self.default_model_suffix = default_model_suffix
         self.network_info = network_info
 
-    def predict(self, idenitifers, input_data):
+    def predict(self, identifiers, input_data):
         raise NotImplementedError
 
     def release(self):
@@ -185,11 +179,44 @@ class BaseModel:
             if len(model_list) > 1:
                 raise ConfigError('Several suitable models for {} found'.format(self.default_model_suffix))
             model = model_list[0]
+            print_info('{} - Found model: {}'.format(self.default_model_suffix, model))
         if model.suffix == '.blob':
             return model, None
         weights = network_info.get('weights', model.parent / model.name.replace('xml', 'bin'))
+        if 'weights' not in network_info:
+            print_info('{} - Found weights: {}'.format(self.default_model_suffix, weights))
 
         return model, weights
+
+    def print_input_output_info(self):
+        print_info('{} - Input info:'.format(self.default_model_suffix))
+        has_info = hasattr(self.network if self.network is not None else self.exec_network, 'input_info')
+        if self.network:
+            if has_info:
+                network_inputs = OrderedDict(
+                    [(name, data.input_data) for name, data in self.network.input_info.items()]
+                )
+            else:
+                network_inputs = self.network.inputs
+            network_outputs = self.network.outputs
+        else:
+            if has_info:
+                network_inputs = OrderedDict([
+                    (name, data.input_data) for name, data in self.exec_network.input_info.items()
+                ])
+            else:
+                network_inputs = self.exec_network.inputs
+            network_outputs = self.exec_network.outputs
+        for name, input_info in network_inputs.items():
+            print_info('\tLayer name: {}'.format(name))
+            print_info('\tprecision: {}'.format(input_info.precision))
+            print_info('\tshape {}\n'.format(input_info.shape))
+        print_info('{} - Output info'.format(self.default_model_suffix))
+        for name, output_info in network_outputs.items():
+            print_info('\tLayer name: {}'.format(name))
+            print_info('\tprecision: {}'.format(output_info.precision))
+            print_info('\tshape: {}\n'.format(output_info.shape))
+
 
 
 def create_recognizer(model_config, launcher, suffix):
@@ -248,8 +275,8 @@ class SequentialModel:
                 return res.strip()
         return res.strip()
 
-    def predict(self, idenitifiers, input_data):
-        assert len(idenitifiers) == 1
+    def predict(self, identifiers, input_data):
+        assert len(identifiers) == 1
         input_data = np.array(input_data)
         input_data = np.transpose(input_data, (0, 3, 1, 2))
         enc_res = self.recognizer_encoder.predict(
@@ -301,6 +328,7 @@ class RecognizerDLSDKModel(BaseModel):
             self.exec_network = launcher.ie_core.load_network(self.network, launcher.device)
         else:
             self.exec_network = launcher.ie_core.import_network(str(model))
+        self.print_input_output_info()
 
     def predict(self, inputs, identifiers=None):
         return self.exec_network.infer(inputs)

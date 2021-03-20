@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ from .adapter import Adapter
 from ..config import ConfigValidator, StringField, NumberField, ListField, BoolField
 from ..postprocessor import NMS
 from ..representation import DetectionPrediction, ContainerPrediction
-from ..topology_types import SSD, FasterRCNN
 
 
 class SSDAdapter(Adapter):
@@ -33,7 +32,6 @@ class SSDAdapter(Adapter):
     """
     __provider__ = 'ssd'
     prediction_types = (DetectionPrediction, )
-    topology_types = (SSD, FasterRCNN, )
 
     def process(self, raw, identifiers, frame_meta):
         """
@@ -43,7 +41,9 @@ class SSDAdapter(Adapter):
         Returns:
             list of DetectionPrediction objects
         """
-        prediction_batch = self._extract_predictions(raw, frame_meta)[self.output_blob]
+        prediction_batch = self._extract_predictions(raw, frame_meta)
+        self.select_output_blob(prediction_batch)
+        prediction_batch = prediction_batch[self.output_blob]
         prediction_count = prediction_batch.shape[2] if len(prediction_batch.shape) > 2 else prediction_batch.shape[0]
         prediction_batch = prediction_batch.reshape(prediction_count, -1)
         prediction_batch = self.remove_empty_detections(prediction_batch)
@@ -72,8 +72,11 @@ class PyTorchSSDDecoder(Adapter):
     """
     __provider__ = 'pytorch_ssd_decoder'
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
+        )
 
     @classmethod
     def parameters(cls):
@@ -105,7 +108,7 @@ class PyTorchSSDDecoder(Adapter):
         feat_size = self.get_value_from_config('feat_size')
 
         # Set default values according to:
-        # https://github.com/mlperf/inference/tree/master/cloud/single_stage_detector
+        # https://github.com/mlcommons/inference/tree/master/cloud/single_stage_detector
         self.aspect_ratios = [[2], [2, 3], [2, 3], [2, 3], [2], [2]]
         self.feat_size = [[50, 50], [25, 25], [13, 13], [7, 7], [3, 3], [3, 3]] if feat_size is None else feat_size
         self.scales = [21, 45, 99, 153, 207, 261, 315]
@@ -247,8 +250,11 @@ class FacePersonAdapter(Adapter):
 
         return parameters
 
-    def validate_config(self):
-        super().validate_config(on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT)
+    @classmethod
+    def validate_config(cls, config, fetch_only=False, **kwargs):
+        return super().validate_config(
+            config, fetch_only=fetch_only, on_extra_argument=ConfigValidator.ERROR_ON_EXTRA_ARGUMENT
+        )
 
     def configure(self):
         self.face_detection_out = self.launcher_config['face_out']
@@ -281,6 +287,7 @@ class SSDAdapterMxNet(Adapter):
             list of DetectionPrediction objects
         """
         raw_outputs = self._extract_predictions(raw, frame_meta)
+        self.select_output_blob(raw_outputs)
         result = []
         for identifier, prediction_batch in zip(identifiers, raw_outputs[self.output_blob]):
             # Filter detections (get only detections with class_id >= 0)
@@ -331,7 +338,18 @@ class SSDONNXAdapter(Adapter):
                 x_mins, y_mins, x_maxs, y_maxs = bboxes.T
             else:
                 x_mins, y_mins, x_maxs, y_maxs, scores = bboxes.T
-            results.append(DetectionPrediction(identifier, labels, scores, x_mins, y_mins, x_maxs, y_maxs))
+            if labels.ndim > 1:
+                labels = np.squeeze(labels)
+            if scores.ndim > 1:
+                scores = np.squeeze(scores)
+            if x_mins.ndim > 1:
+                x_mins = np.squeeze(x_mins)
+                y_mins = np.squeeze(y_mins)
+                x_maxs = np.squeeze(x_maxs)
+                y_maxs = np.squeeze(y_maxs)
+            results.append(
+                DetectionPrediction(
+                    identifier, labels, scores, x_mins, y_mins, x_maxs, y_maxs))
 
         return results
 

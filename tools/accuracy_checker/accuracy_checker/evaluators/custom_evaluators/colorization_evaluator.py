@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -90,10 +90,12 @@ class ColorizationEvaluator(BaseEvaluator):
             dataset_tag='',
             output_callback=None,
             allow_pairwise_subset=False,
-            dump_prediction_to_annotgiation=False,
+            dump_prediction_to_annotation=False,
+            calculate_metrics=True,
             **kwargs):
 
         if self.dataset is None or (dataset_tag and self.dataset.tag != dataset_tag):
+
             self.select_dataset(dataset_tag)
 
         self._annotations, self._predictions = [], []
@@ -172,7 +174,13 @@ class ColorizationEvaluator(BaseEvaluator):
         for presenter, metric_result in zip(result_presenters, self._metrics_results):
             presenter.write_results(metric_result, ignore_results_formatting)
 
+    @property
+    def dataset_size(self):
+        return self.dataset.size
+
     def release(self):
+        self.test_model.release()
+        self.check_model.release()
         self.launcher.release()
 
     def reset(self):
@@ -320,11 +328,12 @@ class BaseModel:
 
         return model, weights
 
-    def predict(self, idenitifers, input_data):
+    def predict(self, identifiers, input_data):
         raise NotImplementedError
 
     def release(self):
-        pass
+        del self.network
+        del self.exec_network
 
     def load_model(self, network_info, launcher, log=False):
         model, weights = self.auto_model_search(network_info, self.net_type)
@@ -381,7 +390,6 @@ class ColorizationTestModel(BaseModel):
     def __init__(self, network_info, launcher, delayed_model_loading=False):
         self.net_type = 'colorization_network'
         super().__init__(network_info, launcher, delayed_model_loading)
-        self.color_coeff = np.load(network_info['color_coeff'])
 
     @staticmethod
     def data_preparation(input_data):
@@ -391,26 +399,30 @@ class ColorizationTestModel(BaseModel):
         img_l_rs = np.copy(img_lab[:, :, 0])
         return img_l, img_l_rs
 
-    def postprocessing(self, res, img_l, output_blob, img_size):
-        update_res = (res[output_blob] * self.color_coeff.transpose()[:, :, np.newaxis, np.newaxis]).sum(1)
+    @staticmethod
+    def central_crop(input_data, crop_size=(224, 224)):
+        h, w = input_data.shape[:2]
+        delta_h = (h - crop_size[0]) // 2
+        delta_w = (w - crop_size[1]) // 2
+        return input_data[delta_h:h - delta_h, delta_w: w - delta_w, :]
 
-        out = update_res.transpose((1, 2, 0)).astype(np.float32)
-        out = cv2.resize(out, img_size)
-        img_lab_out = np.concatenate((img_l[:, :, np.newaxis], out), axis=2)
-        new_result = [np.clip(cv2.cvtColor(img_lab_out, cv2.COLOR_Lab2BGR), 0, 1)]
-        return new_result
+    def postprocessing(self, res, img_l):
+        res = np.squeeze(res, axis=0)
+        res = res.transpose((1, 2, 0)).astype(np.float32)
+
+        out_lab = np.concatenate((img_l[:, :, np.newaxis], res), axis=2)
+        result_bgr = np.clip(cv2.cvtColor(out_lab, cv2.COLOR_Lab2BGR), 0, 1)
+
+        return [self.central_crop(result_bgr)]
 
     def predict(self, identifiers, input_data):
         img_l, img_l_rs = self.data_preparation(input_data)
-        h_orig, w_orig = input_data[0].shape[:2]
-        res = self.exec_network.infer(inputs={self.input_blob: [img_l_rs]})
 
-        new_result = self.postprocessing(res, img_l, self.output_blob, (w_orig, h_orig))
+        self.inputs[self.input_blob] = img_l_rs
+        res = self.exec_network.infer(inputs=self.inputs)
+
+        new_result = self.postprocessing(res[self.output_blob], img_l)
         return res, np.array(new_result)
-
-    def release(self):
-        del self.network
-        del self.exec_network
 
     def fit_to_input(self, input_data):
         has_info = hasattr(self.exec_network, 'input_info')
@@ -438,6 +450,10 @@ class ColorizationTestModel(BaseModel):
             self.output_blob = output_blob
             self.with_prefix = with_prefix
 
+        self.inputs = {}
+        for input_name in input_info:
+            self.inputs[input_name] = np.zeros(input_info[input_name].input_data.shape)
+
 
 class ColorizationCheckModel(BaseModel):
     def __init__(self, network_info, launcher, delayed_model_loading=False):
@@ -450,10 +466,6 @@ class ColorizationCheckModel(BaseModel):
         raw_result = self.exec_network.infer(self.fit_to_input(input_data))
         result = self.adapter.process([raw_result], identifiers, [{}])
         return raw_result, result
-
-    def release(self):
-        del self.network
-        del self.exec_network
 
     def fit_to_input(self, input_data):
         constant_normalization = 255.

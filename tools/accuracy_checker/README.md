@@ -48,8 +48,9 @@ In order to evaluate some models required frameworks have to be installed. Accur
 - [MXNet](https://mxnet.apache.org/).
 - [OpenCV DNN](https://docs.opencv.org/4.1.0/d2/de6/tutorial_py_setup_in_ubuntu.html).
 - [TensorFlow](https://www.tensorflow.org/).
-- <a href="https://github.com/microsoft/onnxruntime/blob/master/README.md">ONNX Runtime</a>.
+- [ONNX Runtime](https://github.com/microsoft/onnxruntime/blob/master/README.md).
 - [PyTorch](https://pytorch.org/)
+- [PaddlePaddle](https://www.paddlepaddle.org.cn/documentation/docs/en/guides/index_en.html)
 
 You can use any of them or several at a time. For correct work, Accuracy Checker requires at least one. You are able postpone installation of other frameworks and install them when they will be necessary.
 
@@ -156,24 +157,28 @@ models:
     - name: dataset_name
 ```
 Optionally you can use global configuration. It can be useful for avoiding duplication if you have several models which should be run on the same dataset.
-Example of global definitions file can be found <a href="https://github.com/opencv/open_model_zoo/blob/master/tools/accuracy_checker/dataset_definitions.yml">here</a>. Global definitions will be merged with evaluation config in the runtime by dataset name.
+Example of global definitions file can be found [here](https://github.com/openvinotoolkit/open_model_zoo/blob/master/tools/accuracy_checker/dataset_definitions.yml). Global definitions will be merged with evaluation config in the runtime by dataset name.
 Parameters of global configuration can be overwritten by local config (e.g. if in definitions specified resize with destination size 224 and in the local config used resize with size 227, the value in config - 227 will be used as resize parameter)
 You can use field `global_definitions` for specifying path to global definitions directly in the model config or via command line arguments (`-d`, `--definitions`).
 
 ### Launchers
 
 Launcher is a description of how your model should be executed.
-Each launcher configuration starts with setting `framework` name. Currently *caffe*, *dlsdk*, *mxnet*, *tf*, *tf_lite*, *opencv*, *onnx_runtime* supported. Launcher description can have differences.
+Each launcher configuration starts with setting `framework` name.
+Currently *caffe*, *dlsdk*, *mxnet*, *tf*, *tf2*, *tf_lite*, *opencv*, *onnx_runtime*, *pytorch*, *paddlepaddle* supported.
+Launcher description can have differences.
 Please view:
 
 - [How to configure Caffe launcher](accuracy_checker/launcher/caffe_launcher_readme.md)
-- [How to configure DLSDK launcher](accuracy_checker/launcher/dlsdk_launcher_readme.md)
+- [How to configure OpenVINO launcher](accuracy_checker/launcher/dlsdk_launcher_readme.md)
 - [How to configure OpenCV launcher](accuracy_checker/launcher/opencv_launcher_readme.md)
 - [How to configure MXNet Launcher](accuracy_checker/launcher/mxnet_launcher_readme.md)
 - [How to configure TensorFlow Launcher](accuracy_checker/launcher/tf_launcher_readme.md)
 - [How to configure TensorFlow Lite Launcher](accuracy_checker/launcher/tf_lite_launcher_readme.md)
+- [How to configure TensorFlow 2.0 Launcher](accuracy_checker/launcher/tf2_launcher_readme.md)
 - [How to configure ONNX Runtime Launcher](accuracy_checker/launcher/onnx_runtime_launcher_readme.md)
 - [How to configure PyTorch Launcher](accuracy_checker/launcher/pytorch_launcher_readme.md)
+- [How to configure PaddlePaddle Launcher](accuracy_checker/launcher/pdpd_launcher_readme.md)
 
 ### Datasets
 
@@ -182,10 +187,10 @@ all required preprocessing and postprocessing/filtering steps,
 and metrics that will be used for evaluation.
 
 If your dataset data is a well-known competition problem (COCO, Pascal VOC, and others) and/or can be potentially reused for other models
-it is reasonable to declare it in some global configuration file (*definition* file). This way in your local configuration file you can provide only
+it is reasonable to declare it in some global configuration file ([definition file](dataset_definitions.yml)). This way in your local configuration file you can provide only
 `name` and all required steps will be picked from global one. To pass path to this global configuration use `--definition` argument of CLI.
 
-If you want to evaluate models using prepared config files and well-known datasets, you need to organize folders with validation datasets in a certain way. More detailed information about dataset preparation you can find in <a href="https://github.com/opencv/open_model_zoo/blob/develop/datasets.md">Dataset Preparation Guide</a>.
+If you want to evaluate models using prepared config files and well-known datasets, you need to organize folders with validation datasets in a certain way. More detailed information about dataset preparation you can find in [Dataset Preparation Guide](https://github.com/openvinotoolkit/open_model_zoo/blob/develop/datasets.md).
 
 Each dataset must have:
 

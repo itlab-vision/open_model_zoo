@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ class ExtendSegmentationMask(Postprocessor):
     def _deprocess_prediction(prediction, meta):
         def _resize(entry, height, width):
             if len(entry.shape) == 2:
-                entry.mask = ResizeSegmentationMask.segm_resize(entry, width, height)
+                entry = ResizeSegmentationMask.segm_resize(entry, width, height)
                 return entry
 
             entry_mask = []

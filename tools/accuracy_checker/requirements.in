@@ -28,9 +28,9 @@ nltk
 # editdistance calculation
 editdistance
 
-# speech recognition with language modeling
-pypi-kenlm
-
 # DNA sequence matching
 parasail
 fast-ctc-decode
+
+# raw image formats processing
+rawpy

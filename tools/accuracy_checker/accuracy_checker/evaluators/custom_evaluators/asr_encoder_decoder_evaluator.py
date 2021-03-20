@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ class AutomaticSpeechRecognitionEvaluator(BaseEvaluator):
             output_callback=None,
             allow_pairwise_subset=False,
             dump_prediction_to_annotation=False,
+            calculate_metrics=True,
             **kwargs):
         if self.dataset is None or (dataset_tag and self.dataset.tag != dataset_tag):
             self.select_dataset(dataset_tag)
@@ -95,7 +96,7 @@ class AutomaticSpeechRecognitionEvaluator(BaseEvaluator):
                 batch_identifiers, batch_inputs_extr, encoder_callback=encoder_callback
             )
             metrics_result = None
-            if self.metric_executor:
+            if self.metric_executor and calculate_metrics:
                 metrics_result, _ = self.metric_executor.update_metrics_on_batch(
                     batch_input_ids, batch_annotation, batch_prediction
                 )
@@ -252,13 +253,17 @@ class AutomaticSpeechRecognitionEvaluator(BaseEvaluator):
 
         return ProgressReporter.provide('print', dataset_size, **pr_kwargs)
 
+    @property
+    def dataset_size(self):
+        return self.dataset.size
+
 
 class BaseModel:
     def __init__(self, network_info, launcher, delayed_model_loading=False):
         self.network_info = network_info
         self.launcher = launcher
 
-    def predict(self, idenitifiers, input_data):
+    def predict(self, identifiers, input_data):
         raise NotImplementedError
 
     def release(self):

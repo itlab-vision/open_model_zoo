@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ from .classification import (
     ClipAccuracy,
     ClassificationF1Score,
     MetthewsCorrelation,
-    RocAucScore
+    RocAucScore,
+    AcerScore,
 )
 from .detection import (
     DetectionMAP,
@@ -38,7 +39,8 @@ from .reid import (
     PairwiseAccuracy,
     PairwiseAccuracySubsets,
     FaceRecognitionTAFAPairMetric,
-    NormalizedEmbeddingAccuracy
+    NormalizedEmbeddingAccuracy,
+    LocalizationRecall
 )
 from .semantic_segmentation import SegmentationAccuracy, SegmentationIOU, SegmentationMeanAccuracy, SegmentationFWAcc
 from .character_recognition import CharacterRecognitionAccuracy, LabelLevelRecognitionAccuracy
@@ -50,6 +52,7 @@ from .regression import (
     MeanSquaredError,
     Log10Error,
     MeanAbsolutePercentageError,
+    RelativeL2Error,
 
     RootMeanSquaredErrorOnInterval,
     RootMeanSquaredError,
@@ -85,7 +88,8 @@ from .coco_orig_metrics import (
 )
 from .hit_ratio import HitRatioMetric, NDSGMetric
 from .machine_translation import BilingualEvaluationUnderstudy
-from .question_answering import ExactMatchScore, ScoreF1, QuestionAnsweringEmbeddingAccurcay
+from .question_answering import ExactMatchScore, ScoreF1, QuestionAnsweringEmbeddingAccuracy
+from .ner import NERAccuracy, NERFScore, NERPrecision, NERRecall
 from .mpjpe_multiperson import MpjpeMultiperson
 from .language_modeling import ScorePerplexity
 
@@ -101,6 +105,9 @@ from .score_class_comparison import ScoreClassComparisonMetric
 from .dna_seq_accuracy import DNASequenceAccuracy
 
 from .gan_metrics import InceptionScore, FrechetInceptionDistance
+
+from .salient_objects_detection import SalienceMapMAE, SalienceEMeasure, SalienceMapFMeasure, SalienceSMeasure
+
 __all__ = [
     'Metric',
     'MetricsExecutor',
@@ -110,6 +117,7 @@ __all__ = [
     'ClassificationAccuracyClasses',
     'ClipAccuracy',
     'ClassificationF1Score',
+    'MetthewsCorrelation',
 
     'DetectionMAP',
     'MissRate',
@@ -123,6 +131,7 @@ __all__ = [
     'PairwiseAccuracySubsets',
     'FaceRecognitionTAFAPairMetric',
     'NormalizedEmbeddingAccuracy',
+    'LocalizationRecall',
 
     'SegmentationAccuracy',
     'SegmentationIOU',
@@ -145,6 +154,7 @@ __all__ = [
     'AngleError',
     'MeanAbsolutePercentageError',
     'Log10Error',
+    'RelativeL2Error',
 
     'MultiLabelAccuracy',
     'MultiLabelRecall',
@@ -175,7 +185,12 @@ __all__ = [
 
     'ScoreF1',
     'ExactMatchScore',
-    'QuestionAnsweringEmbeddingAccurcay',
+    'QuestionAnsweringEmbeddingAccuracy',
+
+    'NERAccuracy',
+    'NERPrecision',
+    'NERRecall',
+    'NERFScore',
 
     'MpjpeMultiperson',
 
@@ -200,4 +215,11 @@ __all__ = [
 
     'InceptionScore',
     'FrechetInceptionDistance',
+
+    'AcerScore',
+
+    'SalienceMapMAE',
+    'SalienceMapFMeasure',
+    'SalienceSMeasure',
+    'SalienceEMeasure'
 ]

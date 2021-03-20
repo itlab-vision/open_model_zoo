@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ class MSCOCOBaseMetric(PerImageEvaluationMetric):
                 description="Max number of predicted results per image. If you have more predictions, "
                             "the results with minimal confidence will be ignored."
             ),
-            'threshold' : BaseField(
+            'threshold': BaseField(
                 optional=True, default='.50:.05:.95',
                 description="Intersection over union threshold. "
                             "You can specify one value or comma separated range of values. "
@@ -238,7 +238,7 @@ class MSCOCOKeypointsPrecision(MSCOCOKeypointsBaseMetric):
 
 
 class MSCOCOKeypointsRecall(MSCOCOKeypointsBaseMetric):
-    __provider__ = 'coco_keypoints_precision'
+    __provider__ = 'coco_keypoints_recall'
 
     def update(self, annotation, prediction):
         per_class_matching = super().update(annotation, prediction)
@@ -341,8 +341,8 @@ def compute_precision_recall(thresholds, matching_results):
     npig = np.count_nonzero(gt_ignored == 0)
     tps = np.logical_and(dtm, np.logical_not(dt_ignored))
     fps = np.logical_and(np.logical_not(dtm), np.logical_not(dt_ignored))
-    tp_sum = np.cumsum(tps, axis=1).astype(dtype=np.float)
-    fp_sum = np.cumsum(fps, axis=1).astype(dtype=np.float)
+    tp_sum = np.cumsum(tps, axis=1).astype(dtype=float)
+    fp_sum = np.cumsum(fps, axis=1).astype(dtype=float)
     if npig == 0:
         return np.nan, np.nan
     for t, (tp, fp) in enumerate(zip(tp_sum, fp_sum)):

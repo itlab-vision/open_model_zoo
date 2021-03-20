@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -51,10 +51,10 @@ class ComplexRegressionMetricProfiler(MetricProfiler):
 class PointRegression(MetricProfiler):
     __provider__ = 'point_regression'
 
-    def __init__(self, metric_name, dump_iterations=100):
+    def __init__(self, metric_name, dump_iterations=100, name=None):
         self.updated_fields = False
         self.metric_names = []
-        super().__init__(metric_name, dump_iterations)
+        super().__init__(metric_name, dump_iterations, name=name)
 
     def register_metric(self, metric_name):
         self.metric_names.append(metric_name)

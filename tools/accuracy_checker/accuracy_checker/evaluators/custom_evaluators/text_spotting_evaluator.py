@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2020 Intel Corporation
+Copyright (c) 2018-2021 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,11 @@ from ...launcher import create_launcher
 from ...utils import contains_all, extract_image_representations, get_path
 from ...progress_reporters import ProgressReporter
 from ...logging import print_info
+
+
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum()
 
 
 class TextSpottingEvaluator(BaseEvaluator):
@@ -63,6 +68,7 @@ class TextSpottingEvaluator(BaseEvaluator):
             output_callback=None,
             allow_pairwise_subset=False,
             dump_prediction_to_annotation=False,
+            calculate_metrics=True,
             **kwargs):
         self._prepare_dataset(dataset_tag)
         self._create_subset(subset, num_images, allow_pairwise_subset)
@@ -91,8 +97,11 @@ class TextSpottingEvaluator(BaseEvaluator):
             batch_raw_prediction, batch_prediction = self.model.predict(
                 batch_identifiers, batch_data, batch_meta, callback=temporal_output_callback
             )
+            batch_annotation, batch_prediction = self.postprocessor.process_batch(
+                batch_annotation, batch_prediction, batch_meta
+            )
             metrics_result = None
-            if self.metric_executor:
+            if self.metric_executor and calculate_metrics:
                 metrics_result, _ = self.metric_executor.update_metrics_on_batch(
                     batch_input_ids, batch_annotation, batch_prediction
                 )
@@ -247,6 +256,10 @@ class TextSpottingEvaluator(BaseEvaluator):
         elif num_images is not None:
             self.dataset.make_subset(end=num_images, accept_pairs=allow_pairwise)
 
+    @property
+    def dataset_size(self):
+        return self.dataset.size
+
 
 class BaseModel:
     def __init__(self, network_info, launcher, default_model_suffix, delayed_model_loading=False):
@@ -385,6 +398,7 @@ class SequentialModel:
         self.alphabet = network_info['alphabet']
         self.sos_index = int(network_info['sos_index'])
         self.eos_index = int(network_info['eos_index'])
+        self.confidence_threshold = float(network_info.get('recognizer_confidence_threshold', '0'))
         self.with_prefix = False
         self._part_by_name = {
             'detector': self.detector,
@@ -420,6 +434,7 @@ class SequentialModel:
 
             text = str()
 
+            confidence = 1.0
             for _ in range(self.max_seq_len):
                 input_to_decoder = {
                     self.recognizer_decoder_inputs['prev_symbol']: prev_symbol_index,
@@ -428,16 +443,17 @@ class SequentialModel:
                 decoder_outputs = self.recognizer_decoder.predict(identifiers, input_to_decoder)
                 if callback:
                     callback(decoder_outputs)
-                coder_output = decoder_outputs[self.recognizer_decoder_outputs['symbols_distribution']]
-                prev_symbol_index = np.argmax(coder_output, axis=1)
+                decoder_output = decoder_outputs[self.recognizer_decoder_outputs['symbols_distribution']]
+                softmaxed = softmax(decoder_output[0])
+                prev_symbol_index = np.argmax(decoder_output, axis=1)
+                confidence *= softmaxed[prev_symbol_index]
                 if prev_symbol_index == self.eos_index:
                     break
                 hidden = decoder_outputs[self.recognizer_decoder_outputs['cur_hidden']]
                 text += self.alphabet[int(prev_symbol_index)]
-            texts.append(text)
+            texts.append(text if confidence >= self.confidence_threshold else '')
 
         texts = np.array(texts)
-
         detector_outputs['texts'] = texts
         output = self.adapter.process(detector_outputs, identifiers, frame_meta)
         return detector_outputs, output
@@ -462,7 +478,7 @@ class SequentialModel:
             {'name': 'detector', 'model': self.detector.get_network()},
             {'name': 'recognizer_encoder', 'model': self.recognizer_encoder.get_network()},
             {'name': 'recognizer_decoder', 'model': self.recognizer_decoder.get_network()}
-            ]
+        ]
 
     def update_inputs_outputs_info(self):
         def generate_name(prefix, with_prefix, layer_name):
@@ -472,9 +488,9 @@ class SequentialModel:
             isinstance(self.detector.im_data_name, str) and self.detector.im_data_name.startswith('detector_')
         )
         if with_prefix != self.with_prefix:
-            self.detector.text_feats_out = generate_name('detector_', with_prefix, self.detector.text_feats_out)
             self.adapter.classes_out = generate_name('detector_', with_prefix, self.adapter.classes_out)
-            self.adapter.scores_out = generate_name('detector_', with_prefix, self.adapter.scores_out)
+            if self.adapter.scores_out is not None:
+                self.adapter.scores_out = generate_name('detector_', with_prefix, self.adapter.scores_out)
             self.adapter.boxes_out = generate_name('detector_', with_prefix, self.adapter.boxes_out)
             self.adapter.raw_masks_out = generate_name('detector_', with_prefix, self.adapter.raw_masks_out)
             self.recognizer_encoder_input = generate_name(
@@ -508,19 +524,26 @@ class DetectorDLSDKModel(BaseModel):
                 OrderedDict([(name, data.input_data) for name, data in self.exec_network.input_info.items()])
                 if has_info else self.exec_network.inputs
             )
-            self.im_info_name = [x for x in input_info if len(input_info[x].shape) == 2][0]
+            self.im_info_name = [x for x in input_info if len(input_info[x].shape) == 2]
             self.im_data_name = [x for x in input_info if len(input_info[x].shape) == 4][0]
-        self.text_feats_out = 'text_features'
+            if self.im_info_name:
+                self.im_info_name = self.im_info_name[0]
+                self.text_feats_out = 'detector_text_features' if self.im_data_name.startswith(
+                    'detector_') else 'text_features'
+            else:
+                self.text_feats_out = 'detector_text_features.0' if self.im_data_name.startswith(
+                    'detector_') else 'text_features.0'
 
     def predict(self, identifiers, input_data):
-
         input_data = np.array(input_data)
         assert len(input_data.shape) == 4
         assert input_data.shape[0] == 1
 
-        input_data = {self.im_data_name: self.fit_to_input(input_data),
-                      self.im_info_name: np.array(
-                          [[input_data.shape[1], input_data.shape[2], 1.0]])}
+        if self.im_info_name:
+            input_data = {self.im_data_name: self.fit_to_input(input_data),
+                          self.im_info_name: np.array([[input_data.shape[1], input_data.shape[2], 1.0]])}
+        else:
+            input_data = {self.im_data_name: self.fit_to_input(input_data)}
 
         output = self.exec_network.infer(input_data)
 
@@ -553,8 +576,15 @@ class DetectorDLSDKModel(BaseModel):
             OrderedDict([(name, data.input_data) for name, data in self.exec_network.input_info.items()])
             if has_info else self.exec_network.inputs
         )
-        self.im_info_name = [x for x in input_info if len(input_info[x].shape) == 2][0]
         self.im_data_name = [x for x in input_info if len(input_info[x].shape) == 4][0]
+        self.im_info_name = [x for x in input_info if len(input_info[x].shape) == 2]
+        if self.im_info_name:
+            self.im_info_name = self.im_info_name[0]
+            self.text_feats_out = 'detector_text_features' if self.im_data_name.startswith(
+                'detector_') else 'text_features'
+        else:
+            self.text_feats_out = 'detector_text_features.0' if self.im_data_name.startswith(
+                'detector_') else 'text_features.0'
         if log:
             self.print_input_output_info()
 
