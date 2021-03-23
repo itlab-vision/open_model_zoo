@@ -108,6 +108,7 @@ from .dna_seq_recognition import DNASeqRecognition
 from .optical_flow import PWCNetAdapter
 from .salient_objects_detection import SalientObjectDetection
 from .dummy_adapters import GVADetectionAdapter, XML2DetectionAdapter, GVAClassificationAdapter
+from .speech_denoising import SpeechDenoisingAdapter
 
 __all__ = [
     'Adapter',
@@ -230,4 +231,5 @@ __all__ = [
     'GVADetectionAdapter',
     'GVAClassificationAdapter',
 
+    'SpeechDenoisingAdapter',
 ]

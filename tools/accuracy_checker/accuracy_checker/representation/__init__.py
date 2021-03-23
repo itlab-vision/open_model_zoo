@@ -98,6 +98,8 @@ from .raw_representation import RawTensorAnnotation, RawTensorPrediction
 
 from .optical_flow import OpticalFlowAnnotation, OpticalFlowPrediction
 
+from .speech_denoising import SpeechDenoisingAnnotation, SpeechDenoisingPrediction
+
 __all__ = [
     'BaseRepresentation',
 
@@ -204,4 +206,7 @@ __all__ = [
 
     'OpticalFlowAnnotation',
     'OpticalFlowPrediction',
+
+    'SpeechDenoisingAnnotation',
+    'SpeechDenoisingPrediction',
 ]

@@ -99,6 +99,8 @@ from .wflw import WFLWConverter
 from .see_in_the_dark import SeeInTheDarkDatasetConverter
 from .conll_ner import CONLLDatasetConverter
 
+from .speech_denoising import SpeechDenoisingFormatConverter
+
 __all__ = [
     'BaseFormatConverter',
     'DatasetConversionInfo',
@@ -188,5 +190,6 @@ __all__ = [
     'CommonDetectionConverter',
     'WFLWConverter',
     'SeeInTheDarkDatasetConverter',
-    'CONLLDatasetConverter'
+    'CONLLDatasetConverter',
+    'SpeechDenoisingFormatConverter',
 ]

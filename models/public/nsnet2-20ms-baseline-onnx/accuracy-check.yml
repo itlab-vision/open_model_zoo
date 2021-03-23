@@ -1,0 +1,11 @@
+models:
+
+  - name: nsnet2-20ms-baseline
+    launchers:
+      - framework: dlsdk
+        adapter:
+          type: speech_denoising
+
+    datasets:
+      - name: ICASSP_dev_test_set
+

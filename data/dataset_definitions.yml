@@ -1233,3 +1233,27 @@ datasets:
       input_suffix: blur.png
       target_suffix: sharp.png
     annotation: GOPRO.pickle
+
+  - name: ICASSP_dev_test_set
+    data_source: audio
+    annotation_conversion:
+      converter: speech_denoising
+      data_dir: audio
+    reader: wav_reader
+    preprocessing:
+      - type: resample_audio
+        sample_rate: 16000
+      - type: audio_to_mel_spectrogram
+        window_size: 0.02
+        window_stride: 0.01
+        window: hamming
+        n_fft: 320
+        n_filt: 161
+        splicing: 1
+        sample_rate: 16000
+        no_delay: True
+    postprocessing:
+      - type: mel_spectrogram_to_audio
+
+    metrics:
+      - type: cepstral_distance

@@ -72,6 +72,7 @@ KNOWN_TASK_TYPES = {
     'question_answering',
     'semantic_segmentation',
     'sound_classification',
+    'speech_denoising',
     'speech_recognition',
     'style_transfer',
     'token_recognition',

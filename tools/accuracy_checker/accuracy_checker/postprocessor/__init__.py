@@ -61,6 +61,7 @@ from .normalize_salient_map import SalientMapNormalizer
 from .min_max_normalization import MinMaxRegressionNormalization
 from .crop_image import CropImage, CornerCropImage
 
+from .audio_postprocessing import MelSpectrogramToAudio
 
 __all__ = [
     'Postprocessor',
@@ -134,4 +135,6 @@ __all__ = [
 
     'CropImage',
     'CornerCropImage',
+
+    'MelSpectrogramToAudio',
 ]

@@ -711,6 +711,7 @@ class AudioToMelSpectrogram(Preprocessor):
             'use_deterministic_dithering': BoolField(optional=True, default=True,
                                                      description="Applies determined dithering to signal spectrum"),
             'dither': NumberField(optional=True, value_type=float, default=0.00001, description="Dithering value"),
+            'no_delay': BoolField(optional=True, default=False, description="Remove first delay frame from stft result")
         })
         return params
 
@@ -727,6 +728,7 @@ class AudioToMelSpectrogram(Preprocessor):
         self.frame_splicing = self.get_value_from_config('splicing')
         self.use_deterministic_dithering = self.get_value_from_config('use_deterministic_dithering')
         self.dither = self.get_value_from_config('dither')
+        self.no_delay = self.get_value_from_config('no_delay')
 
         self.normalize = 'per_feature'
         self.lowfreq = 0
@@ -814,8 +816,12 @@ class AudioToMelSpectrogram(Preprocessor):
                     x = np.pad(x, ((0, 0), (0, 0), (0, pad_to - pad_amt)), constant_values=self.pad_value,
                                mode='constant')
 
+        # delete stft delay if required
+        if self.no_delay:
+            x = x[:,:,1:]
+
         # transpose according to model input layout
-        x = np.transpose(x, [2, 0, 1])
+        x = np.transpose(x, [0, 2, 1])
 
         image.data = x
         return image
