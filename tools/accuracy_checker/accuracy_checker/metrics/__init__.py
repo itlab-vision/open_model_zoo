@@ -108,7 +108,7 @@ from .gan_metrics import InceptionScore, FrechetInceptionDistance
 
 from .salient_objects_detection import SalienceMapMAE, SalienceEMeasure, SalienceMapFMeasure, SalienceSMeasure
 
-from .speech_denoising import CepstralDistance
+from .speech_denoising import CepstralDistance, FwSegSNR
 
 __all__ = [
     'Metric',
@@ -226,4 +226,5 @@ __all__ = [
     'SalienceEMeasure',
 
     'CepstralDistance',
+    'FwSegSNR',
 ]

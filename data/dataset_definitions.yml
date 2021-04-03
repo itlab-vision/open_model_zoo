@@ -1257,3 +1257,4 @@ datasets:
 
     metrics:
       - type: cepstral_distance
+      - type: fwsegSNR
