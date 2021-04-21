@@ -19,12 +19,12 @@ applying a filter. The model uses the SE method based on [Recurrent Neural Netwo
 
 ## Accuracy
 
-Accuracy metrics are obtained on ... dataset.
-| Metric | Value |
-| ------ | ----- |
-|        |       |
-|        |       |
-|        |       |
+Accuracy metrics are obtained on ICASSP_dev_test_set dataset.
+| Metric            | Value |
+| ----------------- | ----- |
+| cepstral distance |       |
+| fwsegSNR          |       |
+| stoi              |       |
 
 ## Input
 

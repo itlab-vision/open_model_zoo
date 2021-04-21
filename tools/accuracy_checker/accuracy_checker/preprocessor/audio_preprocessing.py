@@ -758,7 +758,10 @@ class AudioToMelSpectrogram(Preprocessor):
         filterbanks = np.expand_dims(self.mel(
             sample_rate, self.n_fft, n_mels=self.nfilt, fmin=self.lowfreq, fmax=highfreq
         ), 0)
-        x = image.data
+        if isinstance(image.data, list):
+            x = image.data[0]
+        else:
+            x = image.data
         seq_len = x.shape[-1]
 
         # Calculate maximum sequence length

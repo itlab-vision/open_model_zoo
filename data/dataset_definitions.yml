@@ -1243,6 +1243,9 @@ datasets:
     preprocessing:
       - type: resample_audio
         sample_rate: 16000
+      - type: clip_audio
+        duration: 160000 samples
+        overlap: 60000 samples
       - type: audio_to_mel_spectrogram
         window_size: 0.02
         window_stride: 0.01
@@ -1258,3 +1261,4 @@ datasets:
     metrics:
       - type: cepstral_distance
       - type: fwsegSNR
+      - type: stoi

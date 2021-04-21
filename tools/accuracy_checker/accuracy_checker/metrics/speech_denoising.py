@@ -55,14 +55,13 @@ class CepstralDistance(PerImageEvaluationMetric):
         self.values = []
 
     def update(self, annotation, prediction):
+        coef_1 = python_speech_features.mfcc(annotation.clean_audio, annotation.rate)
+        
         #желательно
-        #coef_1 = python_speech_features.mfcc(annotation.clean_audio, annotation.rate)
         #coef_2 = python_speech_features.mfcc(prediction.denoised_audio, prediction.rate)
     
-        rate, sig = scipy.io.wavfile.read(annotation.identifier)
-        coef_1 = python_speech_features.mfcc(sig, rate)
         # ввиду отсутствия постпроцессинга
-        coef_2 = python_speech_features.mfcc(sig * 2, rate)
+        coef_2 = python_speech_features.mfcc(annotation.clean_audio * 2, annotation.rate)
         
         cepstral_distance = self.cd0(coef_1, coef_2)
         self.values.append(cepstral_distance)
@@ -79,12 +78,11 @@ class FwSegSNR(PerImageEvaluationMetric):
     annotation_types = (SpeechDenoisingAnnotation,)
     prediction_types = (SpeechDenoisingPrediction,)
     
-    def fwsegSNR(self, clean, data): # clean и data спектрограммы
-        num_seg = clean.shape[1] # Количество окон в спектрограмме
-        num_freq = clean.shape[0] # Количество частот в спектрограмме
+    def fwsegSNR(self, clean, data, fs):
+        num_seg = clean.shape[1]
+        num_freq = clean.shape[0]
         S = 0
-        B = np.ones(num_freq) # Веса полос частот
-        # Здесь должны быть определённые коэфиценты в зависимости от восприятия слуховой системой человека
+        B = self.B_weight(num_freq, fs)
         for i in range(num_seg):
             Num = 0
             Denom = 0
@@ -94,12 +92,20 @@ class FwSegSNR(PerImageEvaluationMetric):
             S += Num / Denom
         return (10 / num_seg) * S
 
+    def B_weight(self, num_freq, fs):
+        B = np.zeros(num_freq)
+        for i in range(num_freq):
+            f = (i + 1) * (fs / 2) / num_freq
+            Rb = ((12194 ** 2) * (f ** 3)) / (((f ** 2) + (20.6 ** 2)) * ((f ** 2) + (12194 ** 2)) * (((f ** 2) + (158.5 ** 2)) ** 0.5))
+            B[i] = 0.17 + 20 * np.log10(Rb)
+        return B
+    
     def configure(self):
         self.values = []
 
     def update(self, annotation, prediction):
         #желательно
-        #fwsegsnr = self.fwsegSNR(annotation.spectr, prediction.spectr)
+        #fwsegsnr = self.fwsegSNR(annotation.spectrum, prediction.spectrum, annotation.rate)
     
         # ввиду отсутствия annotation.spectr и prediction.spectr
         from random import random
@@ -107,6 +113,118 @@ class FwSegSNR(PerImageEvaluationMetric):
         
         self.values.append(fwsegsnr)
         return fwsegsnr
+
+    def evaluate(self, annotations, predictions):
+        return np.mean(np.array(self.values))
+
+    def reset(self):
+        self.values = []
+        
+class STOI(PerImageEvaluationMetric):
+    __provider__ = 'stoi'
+    annotation_types = (SpeechDenoisingAnnotation,)
+    prediction_types = (SpeechDenoisingPrediction,)
+    
+    def stoi(self, x, y, fs = 10000):
+        if x.shape != y.shape:
+            raise Exception('signals should have the same length')
+        
+        N = 30
+        OBM = self.create_OBM(fs) 
+
+        x, y = self.remove_silent(x, y)
+
+        x_spec = self.stft(x).transpose()
+        y_spec = self.stft(y).transpose()
+
+        x_ = np.sqrt(np.matmul(OBM, np.square(np.abs(x_spec))))
+        y_ = np.sqrt(np.matmul(OBM, np.square(np.abs(y_spec))))
+
+        x_segments = np.array([x_[:, m - N:m] 
+                        for m in range(N, x_.shape[1] + 1)])
+        y_segments = np.array([y_[:, m - N:m] 
+                        for m in range(N, x_.shape[1] + 1)])
+
+        x_norm = self.normalize(x_segments)
+        y_norm = self.normalize(y_segments)
+
+        return np.sum(x_norm * y_norm / N) / y_norm.shape[0]
+
+    
+    def create_OBM(self, fs):   
+        arr = np.array(range(15))
+        cf = np.power(2 ** (1 / 3), arr) * 150
+        low = 150 * np.power(2, (2 * arr - 1) / 6)
+        high = 150 * np.power(2, (2 * arr + 1) / 6)
+        f = np.linspace(0, fs, 513)
+        f = f[:257]
+        obm = np.zeros((15, len(f)))
+
+        for i in range(len(cf)):
+            l_ii = np.argmin(np.square(f - low[i]))
+            h_ii = np.argmin(np.square(f - high[i]))
+            obm[i, l_ii:h_ii] = 1
+        return obm
+
+
+    def stft(self, x):
+        w = np.hanning(258)[1: -1]
+        out = np.array([np.fft.rfft(w * x[i:i + 256], n=512)
+                        for i in range(0, len(x) - 256, 128)])
+        return out
+
+    def normalize(self, x):
+        x_normed = x + self.EPS * np.random.standard_normal(x.shape)
+        x_normed -= np.mean(x_normed, axis=-1, keepdims=True)
+        x_inv = 1. / np.sqrt(np.sum(
+                    np.square(x_normed), axis=-1, keepdims=True))
+        x_diags = np.array(
+            [np.diag(x_inv[i].reshape(-1)) for i in range(x_inv.shape[0])])
+        x_normed = np.matmul(x_diags, x_normed)
+        x_normed += self.EPS * np.random.standard_normal(x_normed.shape)
+        x_normed -= np.mean(x_normed, axis=1, keepdims=True)
+        x_inv = 1. / np.sqrt(np.sum(
+                    np.square(x_normed), axis=1, keepdims=True))
+        x_diags = np.array(
+            [np.diag(x_inv[i].reshape(-1)) for i in range(x_inv.shape[0])])
+        x_normed = np.matmul(x_normed, x_diags)
+        return x_normed
+
+    def remove_silent(self, x, y):
+        w = np.hanning(258)[1:-1]
+        x_frames = np.array([w * x[i:i + 256] 
+                    for i in range(0, len(x) - 256, 128)])
+        y_frames = np.array([w * y[i:i + 256] 
+                    for i in range(0, len(x) - 256, 128)])
+
+        x_energies = 20 * np.log10(np.linalg.norm(x_frames, axis=1) + self.EPS)
+        mask = (np.max(x_energies) - 40 - x_energies) < 0
+
+        x_frames = x_frames[mask]
+        y_frames = y_frames[mask]
+
+        x_out = np.zeros((len(x_frames) - 1) * 128 + 256)
+        y_out = np.zeros((len(x_frames) - 1) * 128 + 256)
+
+        for i in range(x_frames.shape[0]):
+            x_out[range(i * 128, i * 128 + 256)] += x_frames[i, :]
+            y_out[range(i * 128, i * 128 + 256)] += y_frames[i, :]
+
+        return x_out, y_out
+    
+    def configure(self):
+        self.EPS = np.finfo("float").eps
+        self.values = []
+
+    def update(self, annotation, prediction):
+        #желательно
+        #stoi_metric = self.stoi(annotation.clean_audio, prediction.denoised_audio, annotation.rate)
+    
+        # ввиду отсутствия постпроцессинга
+        stoi_metric = self.stoi(annotation.clean_audio, annotation.clean_audio * 2, annotation.rate)
+        
+        self.values.append(stoi_metric)
+        return stoi_metric
 
     def evaluate(self, annotations, predictions):
         return np.mean(np.array(self.values))
