@@ -17,8 +17,15 @@ limitations under the License.
 from .format_converter import ConverterReturn, DirectoryBasedAnnotationConverter
 from ..config import PathField
 from ..representation import SpeechDenoisingAnnotation
+from ..preprocessor import ResampleAudio, ClipAudio, AudioToMelSpectrogram
 from ..utils import read_csv, get_path, check_file_existence
-
+# fix
+from ..utils import UnsupportedPackage
+try:
+    import scipy.io.wavfile
+except ImportError as import_error:
+    scipy.io.wavfile = UnsupportedPackage("scipy.io.wavfile", import_error.msg)
+# end fix
 
 class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
     __provider__ = 'speech_denoising'
@@ -35,6 +42,10 @@ class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
         return parameters
 
     def configure(self):
+    # fix
+        if isinstance(scipy.io.wavfile, UnsupportedPackage):
+            scipy.io.wavfile.raise_error(self.__provider__)
+    # end fix
         self.data_dir = self.get_value_from_config('data_dir')
 
     def convert(self, check_content=False, progress_callback=None, progress_interval=100,**kwargs):
@@ -43,7 +54,19 @@ class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
         
         data_dir_files = self.data_dir.iterdir()
         for file_in_dir in data_dir_files:
-            annotation.append(SpeechDenoisingAnnotation(file_in_dir))   
+        # fix
+            rate, clean_audio = scipy.io.wavfile.read(file_in_dir)
+            annotation.append(SpeechDenoisingAnnotation(file_in_dir, clean_audio))
+        # end fix
+            #wavreader(file_in_dir)
+            #clean_audio = ResampleAudio(clean_audio)
+            #clean_audio = ClipAudio(clean_audio)
+            #clean_spectrum = AudioToMelSpectrogram(clean_audio)
+            #noisy_audio = ResampleAudio(denoised_audio)
+            #noisy_audio = ClipAudio(denoised_audio)
+            #noisy_spectrum = AudioToMelSpectrogram(denoised_audio)
+            #annotation.append(SpeechDenoisingAnnotation(file_in_dir, clean_audio, clean_spectrum, noisy_spectrum))
+        
             if progress_callback is not None and audio_id % progress_interval == 0:
                 progress_callback(audio_id / num_iterations * 100)
 

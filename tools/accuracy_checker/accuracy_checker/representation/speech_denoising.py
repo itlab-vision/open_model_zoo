@@ -22,11 +22,16 @@ class SpeechDenoisingRepresentation(BaseRepresentation):
 
 
 class SpeechDenoisingAnnotation(SpeechDenoisingRepresentation):
-    def __init__(self, identifier):
+    def __init__(self, identifier, clean_audio, clean_spectrum = None, noisy_spectrum = None):
         super().__init__(identifier)
+        self.clean_audio = clean_audio
+        self.clean_spectrum = clean_spectrum
+        self.noisy_spectrum = noisy_spectrum
 
 
 class SpeechDenoisingPrediction(SpeechDenoisingRepresentation):
-    def __init__(self, identifier, denoised_audio):
+    def __init__(self, identifier, _filter, denoised_audio = None, denoised_spectrum = None):
         super().__init__(identifier)
+        self._filter = _filter
         self.denoised_audio = denoised_audio
+        self.denoised_spectrum = denoised_spectrum
