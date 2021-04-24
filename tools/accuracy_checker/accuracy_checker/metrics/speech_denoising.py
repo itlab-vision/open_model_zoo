@@ -55,13 +55,13 @@ class CepstralDistance(PerImageEvaluationMetric):
         self.values = []
 
     def update(self, annotation, prediction):
-        coef_1 = python_speech_features.mfcc(annotation.clean_audio, 16000)
+        coef_1 = python_speech_features.mfcc(annotation.clean_audio[0,:], 16000)
         
         #желательно
-        #coef_2 = python_speech_features.mfcc(prediction.denoised_audio, prediction.rate)
+        #coef_2 = python_speech_features.mfcc(prediction.denoised_audio, 16000)
     
-        # ввиду отсутствия постпроцессинга
-        coef_2 = python_speech_features.mfcc(annotation.clean_audio * 2, 16000)
+        # ввиду отсутствия prediction.denoised_audio
+        coef_2 = coef_1 * 0.5
         
         cepstral_distance = self.cd0(coef_1, coef_2)
         self.values.append(cepstral_distance)
@@ -78,24 +78,24 @@ class FwSegSNR(PerImageEvaluationMetric):
     annotation_types = (SpeechDenoisingAnnotation,)
     prediction_types = (SpeechDenoisingPrediction,)
     
-    def fwsegSNR(self, clean, data, fs):
+    def fwsegSNR(self, clean, noisy, fs):
         num_seg = clean.shape[1]
         num_freq = clean.shape[0]
         S = 0
-        B = self.B_weight(num_freq, fs)
-        for i in range(num_seg):
+        B = self.B_weight(num_seg, fs)
+        for i in range(num_freq):
             Num = 0
             Denom = 0
-            for j in range(num_freq):
-                Num += B[j] * np.log10((clean[i][j] ** 2) / ((clean[i][j] - data[i][j]) ** 2))
+            for j in range(num_seg):
+                Num += B[j] * np.log10((clean[i][j] ** 2) / ((clean[i][j] - noisy[i][j]) ** 2))
                 Denom += B[j]
             S += Num / Denom
         return (10 / num_seg) * S
 
-    def B_weight(self, num_freq, fs):
-        B = np.zeros(num_freq)
-        for i in range(num_freq):
-            f = (i + 1) * (fs / 2) / num_freq
+    def B_weight(self, num_seg, fs):
+        B = np.zeros(num_seg)
+        for i in range(num_seg):
+            f = (i + 1) * (fs / 2) / num_seg
             Rb = ((12194 ** 2) * (f ** 3)) / (((f ** 2) + (20.6 ** 2)) * ((f ** 2) + (12194 ** 2)) * (((f ** 2) + (158.5 ** 2)) ** 0.5))
             B[i] = 0.17 + 20 * np.log10(Rb)
         return B
@@ -105,9 +105,9 @@ class FwSegSNR(PerImageEvaluationMetric):
 
     def update(self, annotation, prediction):
         #желательно
-        #fwsegsnr = self.fwsegSNR(annotation.spectrum, prediction.spectrum, 16000)
+        #fwsegsnr = self.fwsegSNR(annotation.clean_spectrum, prediction.denoised_spectrum, 16000)
     
-        # ввиду отсутствия annotation.spectr и prediction.spectr
+        # ввиду отсутствия prediction.denoised_spectrum
         from random import random
         fwsegsnr = random()
         
@@ -218,10 +218,10 @@ class STOI(PerImageEvaluationMetric):
 
     def update(self, annotation, prediction):
         #желательно
-        #stoi_metric = self.stoi(annotation.clean_audio, prediction.denoised_audio, 16000)
+        #stoi_metric = self.stoi(annotation.clean_audio[0,:], prediction.denoised_audio, 16000)
     
-        # ввиду отсутствия постпроцессинга
-        stoi_metric = self.stoi(annotation.clean_audio, annotation.clean_audio * 2, 16000)
+        # ввиду отсутствия prediction.denoised_audio
+        stoi_metric = self.stoi(annotation.clean_audio[0,:], annotation.clean_audio[0,:], 16000)
         
         self.values.append(stoi_metric)
         return stoi_metric
