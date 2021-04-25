@@ -105,7 +105,7 @@ class FwSegSNR(PerImageEvaluationMetric):
 
     def update(self, annotation, prediction):
         #желательно
-        #fwsegsnr = self.fwsegSNR(annotation.clean_spectrum, prediction.denoised_spectrum, 16000)
+        #fwsegsnr = self.fwsegSNR(annotation.get_spectrum(annotation.clean_audio), prediction.denoised_spectrum, 16000)
     
         # ввиду отсутствия prediction.denoised_spectrum
         from random import random

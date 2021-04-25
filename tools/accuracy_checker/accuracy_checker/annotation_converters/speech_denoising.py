@@ -61,24 +61,14 @@ class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
         annotation = []
         content_errors = [] if check_content else None
         
-        cleans = []
-        clean_spectrums = []
-        noisy_spectrums= []
+        clean_audios = []
+        noisy_audios = []
         files_in_dir = []
         
         metadata = {'sample_rate' : 16000}
         ra_config = {'sample_rate' : 16000}
         ca_config = {'duration': '160000 samples', 'overlap': '60000 samples'}
-        atms_config = {
-            'window_size': 0.02,
-            'window_stride': 0.01,
-            'window': 'hamming',
-            'n_fft': 320,
-            'n_filt': 161,
-            'splicing': 1,
-            'sample_rate': 16000,
-            'no_delay': True
-        }
+        
         data_dir_files = self.data_dir.iterdir()
         for file_in_dir in data_dir_files:
             with wave.open(str(file_in_dir), "rb") as wav:
@@ -98,10 +88,7 @@ class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
                 image = SamplesToFloat32({}).process(image)
                 image = ResampleAudio(ra_config).process(image)
                 image = ClipAudio(ca_config).process(image)
-                cleans.append(image.data[0])
-                image = AudioToMelSpectrogram(atms_config).process(image)
-                image.data = np.transpose(image.data[0,:,:])
-                clean_spectrums.append(image.data)
+                clean_audios.append(image.data[0])              
                 files_in_dir.append(file_in_dir)
                 
             if progress_callback is not None and audio_id % progress_interval == 0:
@@ -126,15 +113,13 @@ class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
                 image = SamplesToFloat32({}).process(image)
                 image = ResampleAudio(ra_config).process(image)
                 image = ClipAudio(ca_config).process(image)
-                image = AudioToMelSpectrogram(atms_config).process(image)
-                image.data = np.transpose(image.data[0,:,:])
-                noisy_spectrums.append(image.data)
+                noisy_audios.append(image.data[0])
         
             if progress_callback is not None and audio_id % progress_interval == 0:
                 progress_callback(audio_id / num_iterations * 50)
                 
         for i in range(len(files_in_dir)):
-            annotation.append(SpeechDenoisingAnnotation(files_in_dir[i], cleans[i], clean_spectrums[i], noisy_spectrums[i]))
+            annotation.append(SpeechDenoisingAnnotation(files_in_dir[i], clean_audios[i], noisy_audios[i]))
             
         if check_content:
             if annotation is [] :
