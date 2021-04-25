@@ -17,7 +17,7 @@ limitations under the License.
 from .format_converter import ConverterReturn, DirectoryBasedAnnotationConverter
 from ..config import PathField
 from ..representation import SpeechDenoisingAnnotation
-from ..preprocessor import SamplesToFloat32, ResampleAudio, ClipAudio, AudioToMelSpectrogram
+from ..preprocessor import SamplesToFloat32, ResampleAudio, ClipAudio
 from ..data_readers import DataRepresentation
 from ..utils import read_csv, get_path, check_file_existence
 from ..utils import UnsupportedPackage
