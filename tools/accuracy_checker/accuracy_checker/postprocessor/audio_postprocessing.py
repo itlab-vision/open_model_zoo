@@ -146,5 +146,4 @@ class MelSpectrogramToAudio(Postprocessor):
         image = DataRepresentation(data, self.metadata)
         image = ClipAudio(self.ca_config).process(image)
         prediction[0].denoised_audio = image.data[0][0,:]
-        prediction[0].denoised_spectrum = SpeechDenoisingAnnotation.get_spectrum(np.expand_dims(prediction[0].denoised_audio, axis=0))
         return annotation, prediction

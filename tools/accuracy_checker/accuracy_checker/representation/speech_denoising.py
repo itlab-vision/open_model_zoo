@@ -30,7 +30,7 @@ class SpeechDenoisingAnnotation(SpeechDenoisingRepresentation):
         self.noisy_audio = noisy_audio
     @staticmethod
     def get_spectrum(audio):
-        atms_config = {
+        ats_config = {
             'window_size': 0.02,
             'window_stride': 0.01,
             'window': 'hamming',
@@ -40,16 +40,14 @@ class SpeechDenoisingAnnotation(SpeechDenoisingRepresentation):
             'sample_rate': 16000,
             'no_delay': True
         }
-        metadata = {'sample_rate' : 16000}
-        spec = AudioToSpectrogram(atms_config).calcSpec(audio)
+        spec = AudioToSpectrogram(ats_config).calcSpec(audio)
         return spec
         
         
 
 
 class SpeechDenoisingPrediction(SpeechDenoisingRepresentation):
-    def __init__(self, identifier, _filter, denoised_audio = None, denoised_spectrum = None):
+    def __init__(self, identifier, _filter, denoised_audio = None):
         super().__init__(identifier)
         self._filter = _filter
         self.denoised_audio = denoised_audio
-        self.denoised_spectrum = denoised_spectrum
