@@ -63,7 +63,9 @@ class CepstralDistance(PerImageEvaluationMetric):
         return cepstral_distance
 
     def evaluate(self, annotations, predictions):
-        return np.mean(np.array(self.values))
+        # return np.mean(np.array(self.values))
+        # из за процентов
+        return np.mean(np.array(self.values))/100
 
     def reset(self):
         self.values = []
@@ -99,12 +101,14 @@ class FwSegSNR(PerImageEvaluationMetric):
         self.values = []
 
     def update(self, annotation, prediction):
+        # хз что здесь происходит
         fwsegsnr = self.fwsegSNR(annotation.get_spectrum(annotation.clean_audio), prediction.denoised_spectrum, 16000)
         
         self.values.append(fwsegsnr)
         return fwsegsnr
 
     def evaluate(self, annotations, predictions):
+        # хз как тут возвращать
         return np.mean(np.array(self.values))
 
     def reset(self):
