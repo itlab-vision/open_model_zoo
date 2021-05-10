@@ -38,7 +38,8 @@ from .audio_preprocessing import (
     ClipCepstrum,
     TrimmingAudio,
     SamplesToFloat32,
-    AudioToMelSpectrogram
+    AudioToMelSpectrogram,
+    AudioToSpectrogram
 )
 from .audio_preprocessing_ext import (
     SpliceFrame,
@@ -87,6 +88,7 @@ __all__ = [
     'TrimmingAudio',
     'SamplesToFloat32',
     'AudioToMelSpectrogram',
+    'AudioToSpectrogram',
     'SpliceFrame',
     'DitherFrame',
     'DitherSpectrum',

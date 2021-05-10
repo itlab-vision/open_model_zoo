@@ -16,7 +16,7 @@ limitations under the License.
 
 from .base_representation import BaseRepresentation
 from ..data_readers import DataRepresentation
-from ..preprocessor import AudioToMelSpectrogram
+from ..preprocessor import AudioToSpectrogram
 import numpy as np
 
 class SpeechDenoisingRepresentation(BaseRepresentation):
@@ -27,8 +27,9 @@ class SpeechDenoisingAnnotation(SpeechDenoisingRepresentation):
     def __init__(self, identifier, clean_audio, noisy_audio):
         super().__init__(identifier)
         self.clean_audio = clean_audio
-        self.clean_audio = noisy_audio
-    def get_spectrum(self, audio):
+        self.noisy_audio = noisy_audio
+    @staticmethod
+    def get_spectrum(audio):
         atms_config = {
             'window_size': 0.02,
             'window_stride': 0.01,
@@ -40,10 +41,8 @@ class SpeechDenoisingAnnotation(SpeechDenoisingRepresentation):
             'no_delay': True
         }
         metadata = {'sample_rate' : 16000}
-        image = DataRepresentation(audio, metadata)
-        image = AudioToMelSpectrogram(atms_config).process(image)
-        image.data = np.transpose(image.data[0,:,:])
-        return image.data
+        spec = AudioToSpectrogram(atms_config).calcSpec(audio)
+        return spec
         
         
 

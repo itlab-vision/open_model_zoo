@@ -56,12 +56,7 @@ class CepstralDistance(PerImageEvaluationMetric):
 
     def update(self, annotation, prediction):
         coef_1 = python_speech_features.mfcc(annotation.clean_audio[0,:], 16000)
-        
-        #желательно
-        #coef_2 = python_speech_features.mfcc(prediction.denoised_audio, 16000)
-    
-        # ввиду отсутствия prediction.denoised_audio
-        coef_2 = coef_1 * 0.5
+        coef_2 = python_speech_features.mfcc(prediction.denoised_audio, 16000)
         
         cepstral_distance = self.cd0(coef_1, coef_2)
         self.values.append(cepstral_distance)
@@ -104,12 +99,7 @@ class FwSegSNR(PerImageEvaluationMetric):
         self.values = []
 
     def update(self, annotation, prediction):
-        #желательно
-        #fwsegsnr = self.fwsegSNR(annotation.get_spectrum(annotation.clean_audio), prediction.denoised_spectrum, 16000)
-    
-        # ввиду отсутствия prediction.denoised_spectrum
-        from random import random
-        fwsegsnr = random()
+        fwsegsnr = self.fwsegSNR(annotation.get_spectrum(annotation.clean_audio), prediction.denoised_spectrum, 16000)
         
         self.values.append(fwsegsnr)
         return fwsegsnr
@@ -217,12 +207,8 @@ class STOI(PerImageEvaluationMetric):
         self.values = []
 
     def update(self, annotation, prediction):
-        #желательно
-        #stoi_metric = self.stoi(annotation.clean_audio[0,:], prediction.denoised_audio, 16000)
-    
-        # ввиду отсутствия prediction.denoised_audio
-        stoi_metric = self.stoi(annotation.clean_audio[0,:], annotation.clean_audio[0,:], 16000)
-        
+        stoi_metric = self.stoi(annotation.clean_audio[0,:], prediction.denoised_audio, 16000)
+
         self.values.append(stoi_metric)
         return stoi_metric
 

@@ -94,7 +94,7 @@ class SpeechDenoisingFormatConverter(DirectoryBasedAnnotationConverter):
             if progress_callback is not None and audio_id % progress_interval == 0:
                 progress_callback(audio_id / num_iterations * 50)
         
-        data_dir_files = Path(str(self.data_dir)[:-11] + 'noisy\\audio').iterdir()
+        data_dir_files = Path(str(self.data_dir)[:-5] + 'noisy').iterdir()
         for file_in_dir in data_dir_files:
             with wave.open(str(file_in_dir), "rb") as wav:
                 sample_width = wav.getsampwidth()
