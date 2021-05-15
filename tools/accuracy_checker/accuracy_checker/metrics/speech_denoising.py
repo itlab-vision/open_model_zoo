@@ -76,40 +76,100 @@ class FwSegSNR(PerImageEvaluationMetric):
     prediction_types = (SpeechDenoisingPrediction,)
     
     def fwsegSNR(self, clean, noisy, fs):
-        num_seg = clean.shape[1]
-        num_freq = clean.shape[0]
-        S = 0
-        B = self.B_weight(num_seg, fs)
-        for i in range(num_freq):
-            Num = 0
-            Denom = 0
-            for j in range(num_seg):
-                Num += B[j] * np.log10((clean[i][j] ** 2) / ((clean[i][j] - noisy[i][j]) ** 2))
-                Denom += B[j]
-            S += Num / Denom
-        return (10 / num_seg) * S
+        # shape (161, 1000)
+        weight_ratio = 0.2
+        num_val = 25
+        cent_freq = np.zeros((num_val,))
+        bandwidth = np.zeros((num_val,))
 
-    def B_weight(self, num_seg, fs):
-        B = np.zeros(num_seg)
-        for i in range(num_seg):
-            f = (i + 1) * (fs / 2) / num_seg
-            Rb = ((12194 ** 2) * (f ** 3)) / (((f ** 2) + (20.6 ** 2)) * ((f ** 2) + (12194 ** 2)) * (((f ** 2) + (158.5 ** 2)) ** 0.5))
-            B[i] = 0.17 + 20 * np.log10(Rb)
-        return B
+        cent_freq[0] = 50.0000
+        bandwidth[0] = 70.0000
+        cent_freq[1] = 120.000
+        bandwidth[1] = 70.0000
+        cent_freq[2] = 190.000
+        bandwidth[2] = 70.0000
+        cent_freq[3] = 260.000
+        bandwidth[3] = 70.0000
+        cent_freq[4] = 330.000
+        bandwidth[4] = 70.0000
+        cent_freq[5] = 400.000
+        bandwidth[5] = 70.0000
+        cent_freq[6] = 470.000
+        bandwidth[6] = 70.0000
+        cent_freq[7] = 540.000
+        bandwidth[7] = 77.3724
+        cent_freq[8] = 617.372
+        bandwidth[8] = 86.0056
+        cent_freq[9] = 703.378
+        bandwidth[9] = 95.3398
+        cent_freq[10] = 798.717
+        bandwidth[10] = 105.411
+        cent_freq[11] = 904.128
+        bandwidth[11] = 116.256
+        cent_freq[12] = 1020.38
+        bandwidth[12] = 127.914
+        cent_freq[13] = 1148.30
+        bandwidth[13] = 140.423
+        cent_freq[14] = 1288.72
+        bandwidth[14] = 153.823
+        cent_freq[15] = 1442.54
+        bandwidth[15] = 168.154
+        cent_freq[16] = 1610.70
+        bandwidth[16] = 183.457
+        cent_freq[17] = 1794.16
+        bandwidth[17] = 199.776
+        cent_freq[18] = 1993.93
+        bandwidth[18] = 217.153
+        cent_freq[19] = 2211.08
+        bandwidth[19] = 235.631
+        cent_freq[20] = 2446.71
+        bandwidth[20] = 255.255
+        cent_freq[21] = 2701.97
+        bandwidth[21] = 276.072
+        cent_freq[22] = 2978.04
+        bandwidth[22] = 298.126
+        cent_freq[23] = 3276.17
+        bandwidth[23] = 321.465
+        cent_freq[24] = 3597.63
+        bandwidth[24] = 346.136
+
+        n_fft = clean.shape[0]
+        filter = np.zeros((num_val, int(n_fft)))
+        j = np.arange(0, n_fft)
+
+        for i in range(num_val):
+            cf = (cent_freq[i] / (fs / 2)) * (n_fft)
+            bw = (bandwidth[i] / (fs / 2)) * (n_fft)
+            norm_factor = np.log(bandwidth[0]) - np.log(bandwidth[i])
+            filter[i, :] = np.exp(-11 * (((j - np.floor(cf)) / bw) ** 2) + norm_factor)
+
+        clean = np.abs(clean)
+        clean = clean / np.sum(clean, 0)
+        noisy = np.abs(noisy)
+        noisy = noisy / np.sum(noisy, 0)
+        clean = filter.dot(clean)
+        noisy = filter.dot(noisy)
+        error = (clean - noisy) ** 2
+        eps = np.finfo(np.float).eps
+        error[error < eps] = eps
+        W = clean ** weight_ratio
+        SNR = 10 * np.log10((clean ** 2) / error)
+        fwSNR = np.sum(W * SNR, 0) / np.sum(W, 0)
+        return np.mean(fwSNR)
+
     
     def configure(self):
         self.values = []
 
     def update(self, annotation, prediction):
-        # хз что здесь происходит
-        fwsegsnr = self.fwsegSNR(annotation.get_spectrum(annotation.clean_audio), annotation.get_spectrum(np.expand_dims(prediction.denoised_audio, axis=0)), 16000)
-        
+        fwsegsnr = self.fwsegSNR(prediction.get_spectrum(annotation.clean_audio), prediction.get_spectrum(np.expand_dims(prediction.denoised_audio, axis=0)), 16000)
         self.values.append(fwsegsnr)
         return fwsegsnr
 
     def evaluate(self, annotations, predictions):
-        # хз как тут возвращать
-        return np.mean(np.array(self.values))
+        # return np.mean(np.array(self.values))
+        # из за процентов
+        return np.mean(np.array(self.values))/100
 
     def reset(self):
         self.values = []
