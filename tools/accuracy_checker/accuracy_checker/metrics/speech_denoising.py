@@ -28,15 +28,16 @@ try:
 except ImportError as import_error:
     python_speech_features = UnsupportedPackage("python_speech_features", import_error.msg)
     
-try:
-    import scipy.io.wavfile
-except ImportError as import_error:
-    scipy.io.wavfile = UnsupportedPackage("scipy.io.wavfile", import_error.msg)
-    
 class CepstralDistance(PerImageEvaluationMetric):
     __provider__ = 'cepstral_distance'
     annotation_types = (SpeechDenoisingAnnotation,)
     prediction_types = (SpeechDenoisingPrediction,)
+    
+    meta = { 
+        'postfix': ' ',
+        'scale': 1,
+        'result_format': '{}'
+    }
     
     def cd0(self, c1, c2):
         summary = 0
@@ -46,12 +47,10 @@ class CepstralDistance(PerImageEvaluationMetric):
             summary += 4.3429 * sqrt((c1[i][1]-c2[i][1])**2 +
                                  2 * sum((c1[i][2:p+1]-c2[i][2:p+1])**2))
         return summary/n
-
+    
     def configure(self):
         if isinstance(python_speech_features, UnsupportedPackage):
             python_speech_features.raise_error(self.__provider__)
-        if isinstance(scipy.io.wavfile, UnsupportedPackage):
-            scipy.io.wavfile.raise_error(self.__provider__)
         self.values = []
 
     def update(self, annotation, prediction):
@@ -63,9 +62,7 @@ class CepstralDistance(PerImageEvaluationMetric):
         return cepstral_distance
 
     def evaluate(self, annotations, predictions):
-        # return np.mean(np.array(self.values))
-        # из за процентов
-        return np.mean(np.array(self.values))/100
+        return float('{:.2f}'.format(np.mean(np.array(self.values))))
 
     def reset(self):
         self.values = []
@@ -150,7 +147,7 @@ class FwSegSNR(PerImageEvaluationMetric):
         clean = filter.dot(clean)
         noisy = filter.dot(noisy)
         error = (clean - noisy) ** 2
-        eps = np.finfo(np.float).eps
+        eps = np.finfo(np.float64).eps
         error[error < eps] = eps
         W = clean ** weight_ratio
         SNR = 10 * np.log10((clean ** 2) / error)
@@ -167,9 +164,7 @@ class FwSegSNR(PerImageEvaluationMetric):
         return fwsegsnr
 
     def evaluate(self, annotations, predictions):
-        # return np.mean(np.array(self.values))
-        # из за процентов
-        return np.mean(np.array(self.values))/100
+        return float('{:.2f}'.format(np.mean(np.array(self.values))))
 
     def reset(self):
         self.values = []
@@ -277,7 +272,7 @@ class STOI(PerImageEvaluationMetric):
         return stoi_metric
 
     def evaluate(self, annotations, predictions):
-        return np.mean(np.array(self.values))
+        return float('{:.2f}'.format(np.mean(np.array(self.values))*100))
 
     def reset(self):
         self.values = []
