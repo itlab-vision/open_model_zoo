@@ -1235,10 +1235,10 @@ datasets:
     annotation: GOPRO.pickle
 
   - name: ICASSP_dev_test_set
-    data_source: track_1\synthetic\noisy
+    data_source: track_1/synthetic/noisy
     annotation_conversion:
       converter: speech_denoising
-      data_dir: track_1\synthetic\clean
+      data_dir: track_1/synthetic/clean
     reader: wav_reader
     preprocessing:
       - type: audio_samples_to_float32
