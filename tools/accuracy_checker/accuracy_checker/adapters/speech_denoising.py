@@ -30,13 +30,6 @@ class SpeechDenoisingAdapter(Adapter):
 
         output = raw_outputs['output']
 
-        print(output.shape)
-
-        #self.select_output_blob(raw_outputs)
-        #raw_outputs = raw_outputs[self.output_blob]
-
-        #print(raw_outputs.shape)
-
         for i, identifier in enumerate(identifiers):
             result.append(SpeechDenoisingPrediction(identifier, raw[i:i+1]))
         return result

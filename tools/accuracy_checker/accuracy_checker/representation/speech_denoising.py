@@ -15,18 +15,55 @@ limitations under the License.
 """
 
 from .base_representation import BaseRepresentation
-
+from ..data_readers import DataRepresentation
+from ..preprocessor import AudioToSpectrogram, AudioToMelSpectrogram
+import numpy as np
 
 class SpeechDenoisingRepresentation(BaseRepresentation):
     pass
 
 
 class SpeechDenoisingAnnotation(SpeechDenoisingRepresentation):
-    def __init__(self, identifier):
+    def __init__(self, identifier, clean_audio, noisy_audio):
         super().__init__(identifier)
+        self.clean_audio = clean_audio
+        self.noisy_audio = noisy_audio
+    @staticmethod
+    def get_spectrum(audio):
+        ats_config = {
+            'window_size': 0.02,
+            'window_stride': 0.01,
+            'window': 'hamming',
+            'n_fft': 320,
+            'n_filt': 161,
+            'splicing': 1,
+            'sample_rate': 16000,
+            'no_delay': True
+        }
+        spec = AudioToSpectrogram(ats_config).calcSpec(audio)
+        return spec
+        
+        
 
 
 class SpeechDenoisingPrediction(SpeechDenoisingRepresentation):
-    def __init__(self, identifier, denoised_audio):
+    def __init__(self, identifier, _filter, denoised_audio = None):
         super().__init__(identifier)
+        self._filter = _filter
         self.denoised_audio = denoised_audio
+    @staticmethod
+    def get_spectrum(audio):
+        atms_config = {
+            'window_size': 0.02,
+            'window_stride': 0.01,
+            'window': 'hamming',
+            'n_fft': 320,
+            'n_filt': 161,
+            'splicing': 1,
+            'sample_rate': 16000,
+            'no_delay': True
+        }
+        metadata = {'sample_rate' : 16000}
+        image = DataRepresentation(audio, metadata)
+        spec = AudioToMelSpectrogram(atms_config).process(image)
+        return np.transpose(spec.data[0,:,:])

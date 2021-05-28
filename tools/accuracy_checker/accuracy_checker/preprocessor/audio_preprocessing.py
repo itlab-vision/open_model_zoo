@@ -758,6 +758,7 @@ class AudioToMelSpectrogram(Preprocessor):
         filterbanks = np.expand_dims(self.mel(
             sample_rate, self.n_fft, n_mels=self.nfilt, fmin=self.lowfreq, fmax=highfreq
         ), 0)
+        
         x = image.data
         seq_len = x.shape[-1]
 
@@ -977,3 +978,125 @@ class AudioToMelSpectrogram(Preprocessor):
             x_std += 1e-5
             return x - np.reshape(x_mean, (-1, 1, 1)) / np.reshape(x_std, (-1, 1, 1))
         return x
+
+
+
+class AudioToSpectrogram(Preprocessor):
+    __provider__ = 'audio_to_spectrogram'
+
+    @classmethod
+    def parameters(cls):
+        params = super().parameters()
+        params.update({
+            'window_size': NumberField(optional=True, value_type=float, default=0.02,
+                                       description="Size of frame in time-domain, seconds"),
+            'window_stride': NumberField(optional=True, value_type=float, default=0.01,
+                                         description="Intersection of frames in time-domain, seconds"),
+            'window': StringField(
+                choices=windows.keys(), optional=True, default='hann', description="Weighting window type"
+            ),
+            'n_fft': NumberField(optional=True, value_type=int, description="FFT base"),
+            'n_filt': NumberField(optional=True, value_type=int, default=80, description="Number of MEL filters"),
+            'splicing': NumberField(optional=True, value_type=int, default=1,
+                                    description="Number of sequentially concastenated MEL spectrums"),
+            'sample_rate': NumberField(optional=True, value_type=float, description="Audio samplimg frequency, Hz"),
+            'pad_to': NumberField(optional=True, value_type=int, default=0, description="Desired length of features"),
+            'preemph': NumberField(optional=True, value_type=float, default=0.97, description="Preemph factor"),
+            'log': BoolField(optional=True, default=True, description="Enables log() of MEL features values"),
+            'use_deterministic_dithering': BoolField(optional=True, default=True,
+                                                     description="Applies determined dithering to signal spectrum"),
+            'dither': NumberField(optional=True, value_type=float, default=0.00001, description="Dithering value"),
+            'no_delay': BoolField(optional=True, default=False, description="Remove first delay frame from stft result"),
+            'hopfrac': NumberField(optional=True, value_type=float, default=0.5, description="Desired length of features"),
+        })
+        
+        return params
+
+    def configure(self):
+        self.window_size = self.get_value_from_config('window_size')
+        self.window_stride = self.get_value_from_config('window_stride')
+        self.n_fft = self.get_value_from_config('n_fft')
+        self.window_fn = windows.get(self.get_value_from_config('window'))
+        self.preemph = self.get_value_from_config('preemph')
+        self.nfilt = self.get_value_from_config('n_filt')
+        self.sample_rate = self.get_value_from_config('sample_rate')
+        self.log = self.get_value_from_config('log')
+        self.pad_to = self.get_value_from_config('pad_to')
+        self.frame_splicing = self.get_value_from_config('splicing')
+        self.use_deterministic_dithering = self.get_value_from_config('use_deterministic_dithering')
+        self.dither = self.get_value_from_config('dither')
+        self.no_delay = self.get_value_from_config('no_delay')
+        self.hopfrac = self.get_value_from_config('hopfrac')
+        
+     
+    def process(self, image,annotation_meta=None):
+        
+        data=image.data[0]
+        inputSpec = self.calcSpec(data)
+        inputFeature = self.calcFeat(inputSpec)
+        # shape: [batch x time x freq]
+        inputFeature = np.expand_dims(np.transpose(inputFeature), axis=0)
+        image.data= inputFeature
+        return image
+
+    def calcFeat(self,Spec):
+        pmin = 10**(-12)
+        powSpec = np.abs(Spec)**2
+        inpFeat = np.log10(np.maximum(powSpec, pmin))
+        return inpFeat
+    
+    
+    def calcSpec(self,audio,channel=None):
+        """compute complex spectrum from audio file"""
+        N_win = int(float(self.window_size)*self.sample_rate)
+        N_fft = int(self.window_size*self.sample_rate)
+        N_hop = int(N_win * float(self.hopfrac))
+        win = np.sqrt(np.hanning(N_win))
+        spec = self.stft(audio, N_fft, win, N_hop)
+        return spec
+    
+    
+    def stft(self,x, N_fft, win, N_hop, nodelay=True):
+        """
+        short-time Fourier transform
+            x 			time domain signal [samples x channels]
+            N_fft 		FFT size (samples)
+            win 		window,  len(win) <= N_fft
+            N_hop 		hop size (samples)
+            nodelay 	[True,False]: do not introduce delay (visible windowing effects in first frames)
+        """
+        # get lengths
+        if x.ndim ==1 : 
+            x = x[:,np.newaxis]
+       
+        x= np.transpose(x)
+        Nx = x.shape[0]
+        M = x.shape[1]
+        specsize = int(N_fft/2+1)
+        N_win = len(win)
+        N_frames = int(np.ceil( (Nx+N_win-N_hop)/N_hop ))
+        Nx = N_frames*N_hop # padded length
+        x = np.vstack([x, np.zeros((Nx-len(x),M))])
+
+        # init
+        X_spec = np.zeros((specsize,N_frames,M), dtype=complex)
+        win_M = np.outer(win,np.ones((1,M)))
+        x_frame = np.zeros((N_win,M))
+        for nn in range(0,N_frames):
+            idx = int(nn*N_hop)
+            x_frame = np.vstack((x_frame[N_hop:,:], x[idx:idx+N_hop,:]))
+            x_win = win_M * x_frame
+            X = np.fft.rfft(x_win, N_fft, axis=0)
+            X_spec[:,nn,:] = X
+
+        if self.no_delay:
+            delay = int(N_win/N_hop - 1)
+            X_spec = X_spec[:,delay:,:]
+
+        if M==1:
+            X_spec = np.squeeze(X_spec)
+
+        return X_spec
+    
+      
+        

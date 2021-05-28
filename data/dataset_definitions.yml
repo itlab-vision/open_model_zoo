@@ -1235,15 +1235,19 @@ datasets:
     annotation: GOPRO.pickle
 
   - name: ICASSP_dev_test_set
-    data_source: audio
+    data_source: track_1/synthetic/noisy
     annotation_conversion:
       converter: speech_denoising
-      data_dir: audio
+      data_dir: track_1/synthetic/clean
     reader: wav_reader
     preprocessing:
+      - type: audio_samples_to_float32
       - type: resample_audio
         sample_rate: 16000
-      - type: audio_to_mel_spectrogram
+      - type: clip_audio
+        duration: 160000 samples
+        overlap: 60000 samples
+      - type: audio_to_spectrogram
         window_size: 0.02
         window_stride: 0.01
         window: hamming
@@ -1254,6 +1258,16 @@ datasets:
         no_delay: True
     postprocessing:
       - type: mel_spectrogram_to_audio
+        window_size: 0.02
+        window_stride: 0.01
+        window: hamming
+        n_fft: 320
+        n_filt: 161
+        splicing: 1
+        sample_rate: 16000
+        no_delay: True
 
     metrics:
       - type: cepstral_distance
+      - type: fwsegSNR
+      - type: stoi
